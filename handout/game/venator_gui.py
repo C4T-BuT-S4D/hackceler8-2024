@@ -27,6 +27,7 @@ from game.components.boss.bg import BossBG
 # cheats imports
 import time
 from cheats.lib.tick_data import TickData
+from moderngl_window.context.base import KeyModifiers
 
 SCREEN_TITLE = "Hackceler8-24"
 
@@ -55,13 +56,10 @@ class Hackceler8(gfx.Window):
             self.loading_screen_timer = 0
 
         # cheats settings
-
         self.render_gui = True # needed to skip rendering the GUI for screenshots
-
+        self.debug_labels_font_size = 8 # modified for full-size screenshots
         self.ticks_to_apply: list[TickData] = []
-
         self.draws: list[float] = []
-
         self.single_tick_mode = False
 
     def setup_game(self):
@@ -149,6 +147,9 @@ class Hackceler8(gfx.Window):
         self.gui_camera.update()
         self.gui_camera.use()
 
+        if not self.render_gui:
+            return
+
         if self.game.boss is not None:
             self.game.boss.draw_gui()
 
@@ -220,7 +221,7 @@ class Hackceler8(gfx.Window):
         if not self.single_tick_mode:
             self.tick_once()
 
-    def on_key_press(self, symbol: int, modifiers: int):
+    def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
 
         if k == Keys.N and modifiers.ctrl:
@@ -239,12 +240,16 @@ class Hackceler8(gfx.Window):
         if k == Keys.BACKSPACE:
             self.tick_once()
             return
+
+        if symbol == self.wnd.keys.F1 and modifiers.shift:
+            self.screenshot()
+            return
         
-        if symbol == self.wnd.keys.F2:
+        if symbol == self.wnd.keys.F2 and modifiers.shift:
             self.full_screenshot()
             return
         
-        if symbol == self.wnd.keys.F3:
+        if symbol == self.wnd.keys.F3 and modifiers.shift:
             self.prerender_maps()
             return
 
@@ -358,7 +363,17 @@ class Hackceler8(gfx.Window):
                     border=3,
                 ))
 
-                if (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
+                # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
+                if o.nametype == "Enemy" and o.can_melee:
+                    dist = o.melee_range
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        o.x - dist,
+                        o.x + dist,
+                        o.y + dist,
+                        o.y - dist,
+                        (255, 100, 0, 255),
+                    ))
+                elif (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
                     dist = modifier.min_distance
                     objs.append(gfx.lrtb_rectangle_outline(
                         o.x1 - dist,
@@ -370,15 +385,17 @@ class Hackceler8(gfx.Window):
 
                 if o.nametype not in {"Wall"}:
                     text = f"{o.nametype}"
+                    if o.nametype == "warp":
+                        text += f" to {o.map_name}"
                     if name := getattr(o, "name", None):
                         text += f" | {name}"
-                    if health := getattr(o, "health", None):
+                    if (health := getattr(o, "health", None)) and o.nametype not in {"warp"}:
                         text += f" | {health:.02f}"
 
                     x = (o.x1 - self.camera.position.x) / self.camera.scale
-                    y = (self.camera.position.y - o.y2) / self.camera.scale -15
+                    y = (self.camera.position.y - o.y2) / self.camera.scale - self.debug_labels_font_size * 2
                     if x >= 0 and y <= 0 and x <= self.camera.viewport_width and y >= -self.camera.viewport_height:
-                        gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[8], text,
+                        gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
                                  x, y, color=color)
 
                 # if cheats_settings["draw_lines"]:
@@ -414,52 +431,86 @@ class Hackceler8(gfx.Window):
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
 
-    def full_screenshot(self, dir="screenshots", format="jpeg"):
+    def full_screenshot(self, dir="./screenshots", format="jpeg", name: str = None):
         w, h = (
             self.game.tiled_map.map_size_pixels.width,
             self.game.tiled_map.map_size_pixels.height,
         )
 
+        ## Save original window rendering state
+        original_size = self.wnd.size
+        original_buffer_size = self.wnd.buffer_size
+        original_viewport = self.wnd.viewport
+        original_constants = constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT
+        original_debug_labels_font_size = self.debug_labels_font_size
         original_camera = self.camera
         original_fbo = self.ctx.fbo
 
-        # create a custom framebuffer with the same size as the map to keep the aspect ratio and quality
+        # Step 1. create a custom framebuffer with the same size as the map to keep the aspect ratio and quality
         fbo = self.ctx.framebuffer(
             color_attachments=[self.ctx.texture(size=(w, h), components=4)],
         )
         fbo.use()
         self.ctx.fbo = fbo
 
-        # camera viewport needs to be set to the full size for the whole map to be visible
+        # Step 2. Set camera with viewport equal to the full size for the whole map to be visible
         self.camera = gfx.Camera(w, h)
 
-        # simulate a fake frame, no tick should happen
+        # Step 3. Update all rendering-related window constants to appear as if the window shows the whole map
+        self.wnd._width, self.wnd._height = w, h
+        self.wnd._buffer_width, self.wnd._buffer_height = w, h
+        self.wnd._viewport = (0, 0, w, h)
+        constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT = w, h
+        self.resize(w, h)
+        self.debug_labels_font_size = 15
+
+        # Step 4. Simulate a fake frame, no tick should happen. Save the screenshot using data from the custom framebuffer.
         self.render_gui = False
         self.render(0, 0)
+        self.render(0, 0) # render twice to fix imgui not rendering the text on newly loaded maps
         self.render_gui = True
 
+        path = os.path.join(dir, f"full_{self.game.current_map}_{int(time.time())}.{format}")
+        if name is not None:
+            path = os.path.join(dir, f"{name}.{format}")
+        self._save_screenshot(path, format)
+        logging.info(f"Saved full screenshot of map \"{self.game.current_map}\" to \"{path}\"")
+
+        ## Restore original window rendering state
+        self.camera = original_camera
+        self.ctx.fbo = original_fbo
+        self.wnd._width, self.wnd._height = original_size
+        self.wnd._buffer_width, self.wnd._buffer_height = original_buffer_size
+        self.wnd._viewport = original_viewport
+        constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT = original_constants
+        self.resize(*original_size)
+        self.debug_labels_font_size = original_debug_labels_font_size
+
+    def screenshot(self, dir: str = "./screenshots", format: str = "jpeg"):
+        # simulate a fake frame, no tick should happen
+        self.render(0, 0)
+        path = os.path.join(dir, f"screenshot_{self.game.current_map}_{int(time.time())}.{format}")
+        self._save_screenshot(path, format)
+        logging.info(f"Saved screenshot on map \"{self.game.current_map}\" to \"{path}\"")
+    
+    def _save_screenshot(self, path: str, format: str):
         from PIL import Image
         image = Image.frombytes(
             "RGB",
             (
-                fbo.viewport[2] - fbo.viewport[0],
-                fbo.viewport[3] - fbo.viewport[1],
+                self.ctx.fbo.viewport[2] - self.ctx.fbo.viewport[0],
+                self.ctx.fbo.viewport[3] - self.ctx.fbo.viewport[1],
             ),
-            fbo.read(viewport=fbo.viewport, alignment=1),
+            self.ctx.fbo.read(viewport=self.ctx.fbo.viewport, alignment=1),
         )
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
-
-        path = os.path.join(dir, f"{self.game.current_map}.{format}")
-        if not os.path.exists(dir):
-            os.makedirs(dir)
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         image.save(path, format)
-        logging.info(f"Saved screenshot of map \"{self.game.current_map}\" to \"{path}\"")
-
-        self.camera = original_camera
-        self.ctx.fbo = original_fbo
+        
 
     def prerender_maps(self):
         for map in self.game.maps_dict:
             self.game.load_map(map)
-            self.full_screenshot(format="png")
+            self.full_screenshot(dir="./screenshots/prerender", name=self.game.current_map)
         self.game.load_map("base")
