@@ -1,0 +1,18 @@
+diff --git a/moderngl_window/integrations/imgui.py b/moderngl_window/integrations/imgui.py
+index 254c29a..3534a01 100644
+--- a/moderngl_window/integrations/imgui.py
++++ b/moderngl_window/integrations/imgui.py
+@@ -230,9 +230,10 @@ class ModernGLRenderer(BaseOpenGLRenderer):
+                 texture.use(0)
+ 
+                 x, y, z, w = command.clip_rect
+-                viewport_offset_x = (self.wnd.width - self.wnd.viewport_width / self.wnd.pixel_ratio) / 2
+-                viewport_offset_y = (self.wnd.height - self.wnd.viewport_height / self.wnd.pixel_ratio) / 2
+-                self.ctx.scissor = int(x + viewport_offset_x), int(fb_height + viewport_offset_y - w), int(z - x), int(w - y)
++                viewport_offset_x = (self.wnd.width - self.wnd.viewport_width / self.wnd.pixel_ratio)
++                viewport_offset_y = (self.wnd.height - self.wnd.viewport_height / self.wnd.pixel_ratio)
++                x, y, z, w = x / self.wnd.pixel_ratio, y / self.wnd.pixel_ratio, z / self.wnd.pixel_ratio, w / self.wnd.pixel_ratio
++                self.ctx.scissor = int(x + viewport_offset_x), int(display_height + viewport_offset_y - w), int(z - x), int(w - y)
+                 self._vao.render(
+                     moderngl.TRIANGLES, vertices=command.elem_count, first=idx_pos
+                 )
