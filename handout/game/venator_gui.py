@@ -431,10 +431,29 @@ class Hackceler8(gfx.Window):
         self.main_layer.draw(); self.main_layer.clear()
 
     def full_screenshot(self, dir="./screenshots", format="jpeg", name: str = None):
-        w, h = (
-            self.game.tiled_map.map_size_pixels.width,
-            self.game.tiled_map.map_size_pixels.height,
-        )
+        # Precalc the "interesting" area to be displayed in the screenshot
+        # by finding the furthest objects in all directions
+        min_x = min_y = float('inf')
+        max_x = max_y = float('-inf')
+        for o in self.game.objects + self.game.stateful_objects:
+            min_x = min(min_x, o.x1)
+            min_y = min(min_y, o.y1)
+            max_x = max(max_x, o.x2)
+            max_y = max(max_y, o.y2)
+
+        PADDING = 100
+        min_x -= PADDING
+        min_y -= PADDING
+        max_x += PADDING
+        max_y += PADDING
+
+        w, h = max_x - min_x, max_y - min_y
+
+        # commented to use the calculated area instead of the whole map
+        # w, h = (
+        #     self.game.tiled_map.map_size_pixels.width,
+        #     self.game.tiled_map.map_size_pixels.height,
+        # )
 
         ## Save original window rendering state
         original_size = self.wnd.size
@@ -454,6 +473,7 @@ class Hackceler8(gfx.Window):
 
         # Step 2. Set camera with viewport equal to the full size for the whole map to be visible
         self.camera = gfx.Camera(w, h)
+        self.camera.move_to((min_x, min_y))
 
         # Step 3. Update all rendering-related window constants to appear as if the window shows the whole map
         self.wnd._width, self.wnd._height = w, h
