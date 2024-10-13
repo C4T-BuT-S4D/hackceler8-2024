@@ -51,9 +51,8 @@ class Hackceler8(gfx.Window):
         self.camera = gfx.Camera(self.window_size[0], self.window_size[1], constants.DEFAULT_SCALE)
         self.gui_camera = gfx.Camera(self.window_size[0], self.window_size[1])  # For screen space stationary objects.
 
-        # Load the game immediately in standalone mode.
-        if constants.STANDALONE:
-            self.loading_screen_timer = 0
+        # Load the game immediately instead of the original 10 seconds
+        self.loading_screen_timer = 0
 
         # cheats settings
         self.render_gui = True # needed to skip rendering the GUI for screenshots
