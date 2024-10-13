@@ -48,7 +48,7 @@ class Hackceler8(gfx.Window):
         self.main_layer = gfx.CombinedLayer()
 
         self.camera = gfx.Camera(self.window_size[0], self.window_size[1], constants.DEFAULT_SCALE)
-        self.gui_camera = gfx.Camera(self.window_size[0], self.window_size[1], constants.DEFAULT_SCALE)  # For screen space stationary objects.
+        self.gui_camera = gfx.Camera(self.window_size[0], self.window_size[1])  # For screen space stationary objects.
 
         # Load the game immediately in standalone mode.
         if constants.STANDALONE:
@@ -208,7 +208,7 @@ class Hackceler8(gfx.Window):
         if self.game is None:
             return
         if self.game.screen_fader is not None:
-            self.game.screen_fader.draw(scale=constants.DEFAULT_SCALE)
+            self.game.screen_fader.draw(scale=self.camera.scale)
 
     def tick(self, _delta_time: float):
         if self.game is None:
