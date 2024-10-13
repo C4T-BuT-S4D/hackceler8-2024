@@ -26,6 +26,8 @@ from game import venator_gui
 from game import network
 import moderngl_window as mglw
 
+# CBS customization imports
+from game import constants
 
 # A silly monkeypatch to work around mglw not allowing to pass in a parent parser
 mglw._orig_create_parser = mglw.create_parser
@@ -54,6 +56,7 @@ class Hx8Client(venator_gui.Hackceler8):
                 )
                 raise SystemExit()
 
+        constants.STANDALONE = self.argv.standalone
         super().__init__(net=net, **kwargs)
 
     @classmethod

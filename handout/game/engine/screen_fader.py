@@ -26,6 +26,11 @@ class ScreenFader:
     self.alpha = 0
     self.layer = None
 
+    # Skip the fade in standalone mode.
+    if constants.STANDALONE:
+      self.switch_fun()
+      self.done_fun()
+
   def tick(self):
     step = int(255 / constants.FADE_DURATION)
     if self.fade_in:

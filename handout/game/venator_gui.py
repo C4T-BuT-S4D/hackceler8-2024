@@ -48,6 +48,12 @@ class Hackceler8(gfx.Window):
 
         self.loading_screen_timer = 10
 
+        # Load the game immediately in standalone mode.
+        if constants.STANDALONE:
+            self.loading_screen_timer = 0
+
+        self.render_gui = True # needed to skip rendering the GUI for screenshots
+
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
 
@@ -198,6 +204,10 @@ class Hackceler8(gfx.Window):
         k = Keys.from_ui(symbol)
         if k:
             self.game.raw_pressed_keys.add(k)
+        elif symbol == self.wnd.keys.F2:
+            self.full_screenshot()
+        elif symbol == self.wnd.keys.F3:
+            self.prerender_maps()
 
     def on_key_release(self, symbol: int, _modifiers: int):
         if self.game is None:
@@ -229,3 +239,53 @@ class Hackceler8(gfx.Window):
         if self.game.current_map.endswith("_boss") and self.boss_bg is not None:
             return self.boss_bg.white_text()
         return self.game.current_map != "cloud"
+
+    def full_screenshot(self, dir="screenshots", format="jpeg"):
+        w, h = (
+            self.game.tiled_map.map_size_pixels.width,
+            self.game.tiled_map.map_size_pixels.height,
+        )
+
+        original_camera = self.camera
+        original_fbo = self.ctx.fbo
+
+        # create a custom framebuffer with the same size as the map to keep the aspect ratio and quality
+        fbo = self.ctx.framebuffer(
+            color_attachments=[self.ctx.texture(size=(w, h), components=4)],
+        )
+        fbo.use()
+        self.ctx.fbo = fbo
+
+        # camera viewport needs to be set to the full size for the whole map to be visible
+        self.camera = gfx.Camera(w, h)
+
+        # simulate a fake frame, no tick should happen
+        self.render_gui = False
+        self.render(0, 0)
+        self.render_gui = True
+
+        from PIL import Image
+        image = Image.frombytes(
+            "RGB",
+            (
+                fbo.viewport[2] - fbo.viewport[0],
+                fbo.viewport[3] - fbo.viewport[1],
+            ),
+            fbo.read(viewport=fbo.viewport, alignment=1),
+        )
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+
+        path = os.path.join(dir, f"{self.game.current_map}.{format}")
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        image.save(path, format)
+        logging.info(f"Saved screenshot of map \"{self.game.current_map}\" to \"{path}\"")
+
+        self.camera = original_camera
+        self.ctx.fbo = original_fbo
+
+    def prerender_maps(self):
+        for map in self.game.maps_dict:
+            self.game.load_map(map)
+            self.full_screenshot(format="png")
+        self.game.load_map("base")
