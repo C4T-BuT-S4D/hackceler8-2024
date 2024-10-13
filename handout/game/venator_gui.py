@@ -223,6 +223,45 @@ class Hackceler8(gfx.Window):
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
 
+        macros = [
+            ['aw'] + ['a']*50
+        ] # TODO: get from settings
+
+        if k in {
+            Keys.NUMBER_1,
+            Keys.NUMBER_2,
+            Keys.NUMBER_3,
+            Keys.NUMBER_4,
+            Keys.NUMBER_5,
+            Keys.NUMBER_6,
+            Keys.NUMBER_7,
+            Keys.NUMBER_8,
+            Keys.NUMBER_9,
+        } and modifiers.alt:
+            macro_index = ord(k.value[0]) - ord(Keys.NUMBER_1.value[0])
+            if macro_index < 0 or macro_index >= len(macros):
+                logging.error(f'bad macro index "{macro_index}"')
+                return
+            macro = macros[macro_index]
+            if not isinstance(macro, list):
+                logging.error(f'bad macro (not list) "{macro}"')
+                return
+            macro_ticks = []
+            for macro_tick in macro:
+                tick_keys = set()
+                if not isinstance(macro_tick, str):
+                    logging.error(f'bad macro (not str) "{macro_tick}"')
+                    return
+                for key in macro_tick:
+                    key_v = Keys.from_serialized(key)
+                    if not key_v:
+                        logging.error(f'bad macro (not key) "{key}"')
+                        return
+                    tick_keys.add(key_v)
+                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False))
+            self.ticks_to_apply.extend(macro_ticks)
+            return
+
         if k == Keys.N and modifiers.ctrl:
             self.camera.set_scale(self.camera.scale + 1)
             return
@@ -251,9 +290,13 @@ class Hackceler8(gfx.Window):
         if symbol == self.wnd.keys.F3 and modifiers.shift:
             self.prerender_maps()
             return
+        
+        cancel_applying_ticks_on_key_pressed = True # TODO: get from settings
 
         if k:
             self.game.raw_pressed_keys.add(k)
+            if cancel_applying_ticks_on_key_pressed:
+                self.ticks_to_apply = []
 
     def on_key_release(self, symbol: int, _modifiers: int):
         if self.game is None:
@@ -296,15 +339,15 @@ class Hackceler8(gfx.Window):
             keys_to_restore = self.game.raw_pressed_keys.copy()
 
             if tick_to_apply.force_keys:
-                self.game.raw_pressed_keys = set(getattr(Keys, k) for k in tick_to_apply.keys)
+                self.game.raw_pressed_keys = set(k for k in tick_to_apply.keys)
             else:
-                self.game.raw_pressed_keys |= set(getattr(Keys, k) for k in tick_to_apply.keys)
+                self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
 
         self.game.tick()
         self._update_boss_bg()
         self._center_camera_to_player()
 
-        if keys_to_restore:
+        if keys_to_restore is not None:
             self.game.raw_pressed_keys = keys_to_restore
 
     def _record_draw(self):
