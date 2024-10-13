@@ -686,6 +686,9 @@ class Venator:
             content = patchs[path]
             # Version
             new_version = self.get_module_version(content)
+
+            self.save_remote_module(path, content, new_version)
+
             if new_version <= current_version:
                 if new_version == current_version:
                     logging.info(f'{file_path} version is same as the incoming module.')
@@ -705,3 +708,12 @@ class Venator:
         if self.painting_system is None:
             self.painting_system = PaintingSystem(self)
         self.painting_enabled = enabled
+
+    # Cheats added functions
+    
+    def save_remote_module(self, file_path: str, content: str, version: int, dir_path: str = 'remote_modules'):
+        os.makedirs(dir_path, exist_ok=True)
+        path = os.path.join(dir_path, f'{file_path.replace("/", "__")}_{version}_{int(time.time() * 1000)}.py')
+        with open(path, 'w') as f:
+            f.write(content)
+        logging.info(f"Saved remote module to {path}")
