@@ -30,6 +30,7 @@ from typing import Any, Optional, Tuple, Dict, List, Set, Iterable, Union
 
 import imgui
 import moderngl
+import pyperclip
 
 from game import constants
 from moderngl_window.context.base import KeyModifiers
@@ -138,6 +139,8 @@ class Window(mglw.WindowConfig):
         imgui.create_context()
         self.imgui = ModernglWindowRenderer(self.wnd)
         self.imgui_io = imgui.get_io()
+        self.imgui_io.get_clipboard_text_fn = pyperclip.paste
+        self.imgui_io.set_clipboard_text_fn = pyperclip.copy
         for i in FONT_SIZES:
             FONT_PIXEL[i] = self.imgui_io.fonts.add_font_from_file_ttf("resources/textbox/Pixel.ttf", i)
         self.imgui.refresh_font_texture()
