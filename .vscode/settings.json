@@ -11,5 +11,6 @@
       "source.organizeImports": "never",
       "source.unusedImports": "never"
     }
-  }
+  },
+  "python.analysis.extraPaths": ["./handout/env/src/moderngl-window"]
 }
