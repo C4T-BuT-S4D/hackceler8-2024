@@ -116,7 +116,7 @@ def rectangle_filled(x: float, y: float, w: float, h: float, color: Color) -> Sh
     return ShapeDrawParams(x=x-w/2, xr=x+w/2, y=y-h/2, yt=y+h/2, color=color)
 
 
-FONT_SIZES = [120, 60, 40, 30, 20, 18, 15]
+FONT_SIZES = [120, 60, 40, 30, 20, 18, 15, 8]
 FONT_PIXEL: dict[int, int] = {}
 GLOBAL_WINDOW: 'Window' = None
 TICKRATE = 60
@@ -217,11 +217,14 @@ class Window(mglw.WindowConfig):
 
 
 class Camera:
-    def __init__(self, w: int, h: int):
+    def __init__(self, w: int, h: int, scale: int = 1):
         self.ctx = mglw.ctx()
-        self.viewport_width = w
-        self.viewport_height = h
-        self.projection_matrix = Matrix44.orthogonal_projection(0, w, 0, h, -1, 1)
+        self.scale = scale
+        self.w = w
+        self.h = h
+        self.viewport_width = w * scale
+        self.viewport_height = h * scale
+        self.projection_matrix = Matrix44.orthogonal_projection(0, w * scale, 0, h * scale, -1, 1)
         self.position = Vector3()
         self.view_matrix = None
         self.ubo = self.ctx.buffer(dynamic=True, reserve=4 * 4 * 4)
@@ -242,6 +245,14 @@ class Camera:
     def use(self):
         self.ubo.bind_to_uniform_block(0)
         self.ubo.write((self.view_matrix * self.projection_matrix).astype("f4"))
+
+    def set_scale(self, scale: int):
+        if scale == self.scale or scale < 1:
+            return
+        self.scale = scale
+        self.viewport_width = self.w * scale
+        self.viewport_height = self.h * scale
+        self.projection_matrix = Matrix44.orthogonal_projection(0, self.viewport_width, 0, self.viewport_height, -1, 1)
 
 
 def _get_shader_source(name: str):

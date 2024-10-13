@@ -112,3 +112,4 @@ class Keys(enum.Enum):
     X          = ('x',  'X')
     Y          = ('y',  'Y')
     Z          = ('z',  'Z')
+    EQUAL      = ('=',  'EQUAL')

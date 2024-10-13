@@ -24,6 +24,10 @@ from game.engine.keys import Keys
 from game.venator import Venator
 from game.components.boss.bg import BossBG
 
+# cheats imports
+import time
+from cheats.lib.tick_data import TickData
+
 SCREEN_TITLE = "Hackceler8-24"
 
 class Hackceler8(gfx.Window):
@@ -43,16 +47,22 @@ class Hackceler8(gfx.Window):
 
         self.main_layer = gfx.CombinedLayer()
 
-        self.camera = gfx.Camera(self.window_size[0], self.window_size[1])
-        self.gui_camera = gfx.Camera(self.window_size[0], self.window_size[1])  # For screen space stationary objects.
-
-        self.loading_screen_timer = 10
+        self.camera = gfx.Camera(self.window_size[0], self.window_size[1], constants.DEFAULT_SCALE)
+        self.gui_camera = gfx.Camera(self.window_size[0], self.window_size[1], constants.DEFAULT_SCALE)  # For screen space stationary objects.
 
         # Load the game immediately in standalone mode.
         if constants.STANDALONE:
             self.loading_screen_timer = 0
 
+        # cheats settings
+
         self.render_gui = True # needed to skip rendering the GUI for screenshots
+
+        self.ticks_to_apply: list[TickData] = []
+
+        self.draws: list[float] = []
+
+        self.single_tick_mode = False
 
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
@@ -65,19 +75,21 @@ class Hackceler8(gfx.Window):
         screen_center_x = self.game.player.x - (self.camera.viewport_width / 2)
         screen_center_y = self.game.player.y - (self.camera.viewport_height / 2)
 
+        # Commented by pomo to enable viewing the entire map
+
         # Don't let camera travel past 0
-        screen_center_x = max(screen_center_x, 0)
-        screen_center_y = max(screen_center_y, 0)
+        # screen_center_x = max(screen_center_x, 0)
+        # screen_center_y = max(screen_center_y, 0)
 
         # additional controls to avoid showing around the map
-        max_screen_center_x = (
-                self.game.tiled_map.map_size_pixels.width - self.camera.viewport_width
-        )
-        max_screen_center_y = (
-                self.game.tiled_map.map_size_pixels.height - self.camera.viewport_height
-        )
-        screen_center_x = min(screen_center_x, max_screen_center_x)
-        screen_center_y = min(screen_center_y, max_screen_center_y)
+        # max_screen_center_x = (
+        #         self.game.tiled_map.map_size_pixels.width - self.camera.viewport_width
+        # )
+        # max_screen_center_y = (
+        #         self.game.tiled_map.map_size_pixels.height - self.camera.viewport_height
+        # )
+        # screen_center_x = min(screen_center_x, max_screen_center_x)
+        # screen_center_y = min(screen_center_y, max_screen_center_y)
 
         player_centered = screen_center_x, screen_center_y
         self.camera.move_to(player_centered)
@@ -97,6 +109,8 @@ class Hackceler8(gfx.Window):
                 self.game.screen_fader.draw()
             # Arcade system covers the entire screen.
             return
+
+        self._record_draw()
 
         self.camera.update()
         self.camera.use()
@@ -130,6 +144,8 @@ class Hackceler8(gfx.Window):
         self.main_layer.add_many(o.get_draw_info() for o in self.game.objects if o.render_above_player)
         self.main_layer.draw(); self.main_layer.clear()
 
+        self._draw_debug_ui()
+
         self.gui_camera.update()
         self.gui_camera.use()
 
@@ -151,6 +167,13 @@ class Hackceler8(gfx.Window):
         gfx.draw_txt("stamina", gfx.FONT_PIXEL[30], ":%.d" % self.game.player.stamina,
                      -130, -140)
         imgui.pop_style_color()  # COLOR_TEXT
+
+        gfx.draw_txt("ticks", gfx.FONT_PIXEL[30], "T %.d" % self.game.tics,
+                     10, 10)
+
+        if len(self.draws) > 1:
+            gfx.draw_txt("fps", gfx.FONT_PIXEL[30], "F %.02f" % (len(self.draws) / (self.draws[-1] - self.draws[0])),
+                        10, 40)
 
         if self.game.cheating_detected:
             txt = "   OUT OF SYNC\nCHEATING DETECTED"
@@ -185,7 +208,7 @@ class Hackceler8(gfx.Window):
         if self.game is None:
             return
         if self.game.screen_fader is not None:
-            self.game.screen_fader.draw()
+            self.game.screen_fader.draw(scale=constants.DEFAULT_SCALE)
 
     def tick(self, _delta_time: float):
         if self.game is None:
@@ -194,20 +217,39 @@ class Hackceler8(gfx.Window):
                 return
             self.setup_game()
 
-        self.game.tick()
-        self._update_boss_bg()
-        self._center_camera_to_player()
+        if not self.single_tick_mode:
+            self.tick_once()
 
-    def on_key_press(self, symbol: int, _modifiers: int):
-        if self.game is None:
-            return
+    def on_key_press(self, symbol: int, modifiers: int):
         k = Keys.from_ui(symbol)
+
+        if k == Keys.N and modifiers.ctrl:
+            self.camera.set_scale(self.camera.scale + 1)
+            return
+        
+        if k == Keys.M and modifiers.ctrl:
+            self.camera.set_scale(self.camera.scale - 1)
+            return
+        
+        if k == Keys.EQUAL:
+            self.single_tick_mode = not self.single_tick_mode
+            logging.info(f"single tick mode: {self.single_tick_mode}")
+            return
+
+        if k == Keys.BACKSPACE:
+            self.tick_once()
+            return
+        
+        if symbol == self.wnd.keys.F2:
+            self.full_screenshot()
+            return
+        
+        if symbol == self.wnd.keys.F3:
+            self.prerender_maps()
+            return
+
         if k:
             self.game.raw_pressed_keys.add(k)
-        elif symbol == self.wnd.keys.F2:
-            self.full_screenshot()
-        elif symbol == self.wnd.keys.F3:
-            self.prerender_maps()
 
     def on_key_release(self, symbol: int, _modifiers: int):
         if self.game is None:
@@ -239,6 +281,138 @@ class Hackceler8(gfx.Window):
         if self.game.current_map.endswith("_boss") and self.boss_bg is not None:
             return self.boss_bg.white_text()
         return self.game.current_map != "cloud"
+
+
+    # Cheats added functions
+
+    def tick_once(self):
+        keys_to_restore = None
+        if self.ticks_to_apply:
+            tick_to_apply = self.ticks_to_apply.pop(0)
+            keys_to_restore = self.game.raw_pressed_keys.copy()
+
+            if tick_to_apply.force_keys:
+                self.game.raw_pressed_keys = set(getattr(Keys, k) for k in tick_to_apply.keys)
+            else:
+                self.game.raw_pressed_keys |= set(getattr(Keys, k) for k in tick_to_apply.keys)
+
+        self.game.tick()
+        self._update_boss_bg()
+        self._center_camera_to_player()
+
+        if keys_to_restore:
+            self.game.raw_pressed_keys = keys_to_restore
+
+    def _record_draw(self):
+        now = time.time()
+        self.draws.append(now)
+        while self.draws and now - self.draws[0] > 3:
+            self.draws.pop(0)
+
+    def _draw_debug_ui(self):
+        objs = []
+        for o in (
+            self.game.objects +
+            self.game.stateful_objects +
+            self.game.projectile_system.weapons +
+            [self.game.player]
+        ):
+            color = None
+            match o.nametype:
+                case "Wall":
+                    color = (255, 0, 0, 255)
+                case "NPC":
+                    color = (0, 255, 0, 255)
+                case "Player":
+                    color = (255, 165, 0, 255)
+                case "Item":
+                    color = (255, 255, 255, 255)
+                case "Portal":
+                    color = (0, 0, 255, 255)
+                case "Enemy":
+                    color = (255, 0, 0, 255)
+                case "Weapon":
+                    color = (255, 215, 0, 255)
+                case "ArcadeBox":
+                    color = (0, 255, 255, 255)
+                case "KeyGate":
+                    color = (0, 255, 0, 255)
+                case "BossGate":
+                    color = (255, 0, 255, 255)
+                case "warp":
+                    color = (255, 165, 0, 255)
+                case "Fire":
+                    color = (255, 0, 0, 255)
+                case "Ouch":
+                    color = (255, 255, 0, 255)
+                case _:
+                    logging.warning(f"skipped object {o.nametype}")
+
+            if color:
+                objs.append(gfx.lrtb_rectangle_outline(
+                    o.x1,
+                    o.x2,
+                    o.y2,
+                    o.y1,
+                    color,
+                    border=3,
+                ))
+
+                if (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
+                    dist = modifier.min_distance
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        o.x1 - dist,
+                        o.x2 + dist,
+                        o.y2 + dist,
+                        o.y1 - dist,
+                        (255, 255, 0, 255),
+                    ))
+
+                if o.nametype not in {"Wall"}:
+                    text = f"{o.nametype}"
+                    if name := getattr(o, "name", None):
+                        text += f" | {name}"
+                    if health := getattr(o, "health", None):
+                        text += f" | {health:.02f}"
+
+                    x = (o.x1 - self.camera.position.x) / self.camera.scale
+                    y = (self.camera.position.y - o.y2) / self.camera.scale -15
+                    if x >= 0 and y <= 0 and x <= self.camera.viewport_width and y >= -self.camera.viewport_height:
+                        gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[8], text,
+                                 x, y, color=color)
+
+                # if cheats_settings["draw_lines"]:
+                #     if o.nametype == "Item":
+                #         line_color = getattr(
+                #             arcade.color, (o.color or "").upper(), None
+                #         )
+                #         if line_color is None:
+                #             logging.debug(
+                #                 f"failed to get line color for item of color {o.color}, will use the default color"
+                #             )
+                #             line_color = color
+
+                #         arcade.draw_line(
+                #             start_x=self.game.player.x,
+                #             start_y=self.game.player.y,
+                #             end_x=abs(rect.x1() + rect.x2()) / 2,
+                #             end_y=abs(rect.y1() + rect.y2()) / 2,
+                #             color=line_color,
+                #             line_width=2,
+                #         )
+
+                #     if o.nametype == "Portal":
+                #         arcade.draw_line(
+                #             start_x=o.x,
+                #             start_y=o.y,
+                #             end_x=o.dest.x,
+                #             end_y=o.dest.y,
+                #             color=arcade.color.PURPLE,
+                #             line_width=2,
+                #         )
+                    # render lines to something else as well
+        self.main_layer.add_many(objs)
+        self.main_layer.draw(); self.main_layer.clear()
 
     def full_screenshot(self, dir="screenshots", format="jpeg"):
         w, h = (

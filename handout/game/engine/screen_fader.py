@@ -43,14 +43,14 @@ class ScreenFader:
       if self.alpha == 0:
         self.done_fun()
 
-  def draw(self):
+  def draw(self, scale: int = 1):
     if not self.layer:
       self.layer = gfx.ShapeLayer()
     self.layer.clear()
     self.layer.add(gfx.lrtb_rectangle_filled(
       0,
-      constants.SCREEN_WIDTH,
-      constants.SCREEN_HEIGHT,
+      constants.SCREEN_WIDTH * scale,
+      constants.SCREEN_HEIGHT * scale,
       0,
       (0, 0, 0, self.alpha),
     ))
