@@ -364,15 +364,18 @@ class Hackceler8(gfx.Window):
     # Cheats added functions
 
     def tick_once(self):
-        keys_to_restore = None
+        keys_to_restore = self.game.raw_pressed_keys.copy()
         if self.ticks_to_apply:
             tick_to_apply = self.ticks_to_apply.pop(0)
-            keys_to_restore = self.game.raw_pressed_keys.copy()
 
             if tick_to_apply.force_keys:
                 self.game.raw_pressed_keys = set(k for k in tick_to_apply.keys)
             else:
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
+        player = self.game.player
+        walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
+        if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
+            self.game.raw_pressed_keys.discard(Keys.LSHIFT)
 
         # TODO: get from settings
         if self.recording_enabled and time.time() - self.last_save > 5:
@@ -389,8 +392,7 @@ class Hackceler8(gfx.Window):
         self._update_boss_bg()
         self._center_camera_to_player()
 
-        if keys_to_restore is not None:
-            self.game.raw_pressed_keys = keys_to_restore
+        self.game.raw_pressed_keys = keys_to_restore
 
     def _record_draw(self):
         now = time.time()
