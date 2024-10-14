@@ -60,6 +60,9 @@ class Hackceler8(gfx.Window):
         self.ticks_to_apply: list[TickData] = []
         self.draws: list[float] = []
         self.single_tick_mode = False
+        self.last_save = 0
+        self.recording_enabled = False
+        self.screenshot_recordings = []
 
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
@@ -220,6 +223,14 @@ class Hackceler8(gfx.Window):
         if not self.single_tick_mode:
             self.tick_once()
 
+    def render(self, time: float, frame_time: float):
+        super().render(time, frame_time)
+        if len(self.screenshot_recordings) > 0:
+            import threading
+            image = self.get_screenshot_image()
+            while len(self.screenshot_recordings) > 0:
+                threading.Thread(target=lambda: self.save_screenshot_image(image, self.screenshot_recordings.pop(0), 'png')).start()
+
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
 
@@ -277,6 +288,26 @@ class Hackceler8(gfx.Window):
 
         if k == Keys.BACKSPACE:
             self.tick_once()
+            return
+        
+        if k == Keys.R and modifiers.ctrl:
+            if self.recording_enabled:
+                self.save_recording(suffix='end-recording')
+                self.stop_recording()
+                return
+            
+            self.start_recording()
+            self.ticks_to_apply.append(TickData(keys=[Keys.R], force_keys=True))
+            return
+        
+        if k == Keys.L and modifiers.ctrl:
+            self.stop_recording()
+            self.start_recording()
+            self.load_recording()
+            return
+        
+        if k == Keys.S and modifiers.ctrl:
+            self.save_recording(suffix='manual')
             return
 
         if symbol == self.wnd.keys.F1 and modifiers.shift:
@@ -343,7 +374,18 @@ class Hackceler8(gfx.Window):
             else:
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
 
+        # TODO: get from settings
+        if self.recording_enabled and time.time() - self.last_save > 5:
+            self.save_recording(suffix='auto')
+
+        saved_map = self.game.current_map
+        was_player_dead = self.game.player and self.game.player.dead
         self.game.tick()
+        if self.recording_enabled:
+            if self.game.current_map != saved_map:
+                self.save_recording(current_map=saved_map, suffix='map-change')
+            elif self.game.player and self.game.player.dead and not was_player_dead:
+                self.save_recording(suffix='death')
         self._update_boss_bg()
         self._center_camera_to_player()
 
@@ -554,8 +596,8 @@ class Hackceler8(gfx.Window):
         path = os.path.join(dir, f"screenshot_{self.game.current_map}_{int(time.time())}.{format}")
         self._save_screenshot(path, format)
         logging.info(f"Saved screenshot on map \"{self.game.current_map}\" to \"{path}\"")
-    
-    def _save_screenshot(self, path: str, format: str):
+
+    def get_screenshot_image(self):
         from PIL import Image
         image = Image.frombytes(
             "RGB",
@@ -566,6 +608,13 @@ class Hackceler8(gfx.Window):
             self.ctx.fbo.read(viewport=self.ctx.fbo.viewport, alignment=1),
         )
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        return image
+
+    def _save_screenshot(self, path: str, format: str):
+        image = self.get_screenshot_image()
+        self.save_screenshot_image(image, path, format)
+
+    def save_screenshot_image(self, image, path: str, format: str):
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         image.save(path, format)
@@ -576,3 +625,72 @@ class Hackceler8(gfx.Window):
             self.game.load_map(map)
             self.full_screenshot(dir="./screenshots/prerender", name=self.game.current_map)
         self.game.load_map("base")
+
+    def load_recording(self):
+        import json
+        # TODO: get from settings
+        filename = 'base_2024-10-14T17:14:05.400913_00452_end-recording.json'
+
+        recordings_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "cheats",
+            "recordings",
+        )
+        path = os.path.join(recordings_dir, filename)
+
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+        except Exception as e:
+            import traceback
+            logging.error(f"failed to load recording: {e}\n{traceback.format_exc()}")
+            return
+
+        self.ticks_to_apply = [
+            TickData(
+                keys=list(map(Keys.from_serialized, tick.get("raw_keys", []))),
+                text_input=tick.get("text_input", None),
+                force_keys=True,
+            )
+            for tick in data
+        ] + [TickData(
+            keys=[Keys.P],
+            force_keys=True,
+        )]
+
+    def save_recording(self, current_map: str | None = None, suffix: str = ''):
+        import json
+        import datetime
+        if current_map is None:
+            current_map = self.game.current_map
+
+        recordings_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "cheats",
+            "recordings",
+        )
+        os.makedirs(recordings_dir, exist_ok=True)
+
+        savename = (
+            f"{current_map}_{datetime.datetime.now().isoformat()}_{self.game.tics:05}"
+        )
+        if suffix:
+            savename += f"_{suffix}"
+
+        with open(os.path.join(recordings_dir, f"{savename}.json"), "w") as f:
+            json.dump(self.game.current_recording, f, indent=2)
+
+        self.screenshot_recordings.append(os.path.join(recordings_dir, f"{savename}.png"))
+        self.last_save = time.time()
+
+    def start_recording(self):
+        self.recording_enabled = True
+        self.last_save = time.time()
+        self._reset_recording()
+
+    def stop_recording(self):
+        self.recording_enabled = False
+        self._reset_recording()
+
+    def _reset_recording(self):
+        self.game.current_recording = []

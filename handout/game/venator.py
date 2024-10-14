@@ -154,6 +154,8 @@ class Venator:
         self.raw_pressed_keys: set[Keys] = set()
         self.pressed_keys = set()
 
+        self.current_recording = []
+
         self.setup()
 
     @property
@@ -390,6 +392,13 @@ class Venator:
         return self.screen_fader is not None or self.arcade_system is not None
 
     def send_game_info(self):
+        if not self.is_server:
+            save = {
+                "raw_keys": [i.serialized for i in self.raw_pressed_keys],
+                "text_input": self.get_text_input(),
+            }
+            self.current_recording.append(save)
+
         if self.is_server or self.net is None:
             return
         logging.debug(f"{self.tics} : {self.raw_pressed_keys}")
