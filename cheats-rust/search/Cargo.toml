@@ -1,0 +1,16 @@
+[package]
+name = "search"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+name = "search"
+crate-type = ["cdylib"]
+
+[dependencies]
+hashbrown = "0.15.0"
+pyo3 = { workspace = true }
+rayon = "1.10.0"
+static_init = "1.0.3"
+rround = { path = "../rround" }

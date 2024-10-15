@@ -29,6 +29,7 @@ import time
 from cheats.settings import get_settings
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
+import search
 
 SCREEN_TITLE = "Hackceler8-24"
 
@@ -396,9 +397,76 @@ class Hackceler8(gfx.Window):
         if self.recording_enabled and time.time() - self.last_save > 5:
             self.save_recording(suffix='auto')
 
+        cheats_settings = get_settings()
+        if cheats_settings["validate_transitions"]:
+            settings, state, static_state = self._dump_rust_state()
+            keys = self.game.raw_pressed_keys.copy()
+            if Keys.W in keys and Keys.W in self.game.prev_pressed_keys:
+                keys.remove(Keys.W)
+
+            if Keys.LSHIFT in keys:
+                shift = True
+                keys.remove(Keys.LSHIFT)
+            else:
+                shift = False
+            keys &= {Keys.W, Keys.A, Keys.S, Keys.D}
+            if keys == {Keys.W}:
+                move = search.Move.W
+            elif keys == {Keys.A}:
+                move = search.Move.A
+            elif keys == {Keys.D}:
+                move = search.Move.D
+            elif keys == {Keys.W, Keys.A}:
+                move = search.Move.WA
+            elif keys == {Keys.W, Keys.D}:
+                move = search.Move.WD
+            elif keys == {Keys.S}:
+                move = search.Move.S
+            elif keys == {Keys.S, Keys.A}:
+                move = search.Move.SA
+            elif keys == {Keys.S, Keys.D}:
+                move = search.Move.SD
+            elif keys == set():
+                move = search.Move.NONE
+            else:
+                logging.warning(f"unexpected move {keys}")
+                move = None
+
+            if move is not None:
+                expected = search.get_transition(
+                    settings, static_state, state, move, shift
+                )
+
         saved_map = self.game.current_map
         was_player_dead = self.game.player and self.game.player.dead
         self.game.tick()
+
+        if cheats_settings["validate_transitions"] and move is not None:    
+            attrs = [
+                ("x", "x"), 
+                ("y", "y"), 
+                ("x_speed", "vx"), 
+                ("y_speed", "vy"), 
+                ("base_x_speed", "base_vx"), 
+                ("base_y_speed", "base_vy"),
+                ("jump_override", "jump_override"),
+                # ("direction", "direction"),
+                ("in_the_air", "in_the_air"),
+                ("can_jump", "can_jump"),
+                ("stamina", "stamina"),
+                ("speed_multiplier", "speed_multiplier"),
+                ("jump_multiplier", "jump_multiplier"),
+            ]
+            vals = [
+                (getattr(self.game.player, k1), getattr(expected, k2))
+                for k1, k2 in attrs
+            ]
+            if not all(x == y for x, y in vals):
+                print(f"{self.game.tics=} incorrect transition:")
+                for (k1, _), (v1, v2) in zip(attrs, vals):
+                    print(k1, "predicted", v2, "got", v1, f'({v1 == v2=})')
+                print()
+
         if self.recording_enabled:
             if self.game.current_map != saved_map:
                 self.save_recording(current_map=saved_map, suffix='map-change')
@@ -777,3 +845,106 @@ class Hackceler8(gfx.Window):
         print('item paths', self.item_paths)
 
         self.paths_built_for = self.game.current_map
+
+    def _dump_rust_state(self):
+        mode = None
+        player = self.game.player
+        mode = search.GameMode.Platformer
+
+        cheat_settings = get_settings()
+        allowed_moves = []
+        # if cheat_settings["allowed_moves"].lower() not in {"", "all"}:
+        #     moves = cheat_settings["allowed_moves"].upper().split(",")
+        #     for move in moves:
+        #         allowed_moves.append(getattr(cheats_rust.Move, move))
+
+        settings = search.SearchSettings(
+            mode=mode,
+            timeout=1000,
+            always_shift=False,
+            disable_shift=False,
+            allowed_moves=allowed_moves,
+            heuristic_weight=1.0,
+            simple_geometry=True,
+            state_batch_size=100,
+        )
+
+        static_objects = [
+            (
+                search.Hitbox(
+                    search.Rectangle(o.x1, o.x2, o.y1, o.y2),
+                ),
+                search.ObjectType.Wall,
+            )
+            for o in self.game.objects + self.game.stateful_objects if o.nametype == "Wall"
+        ]
+
+        # deadly_objects_type = {
+        #     "Spike": cheats_rust.ObjectType.Spike,
+        #     "Arena": cheats_rust.ObjectType.Arena,
+        #     "Portal": cheats_rust.ObjectType.Portal,
+        # }
+        # static_objects += [
+        #     (
+        #         cheats_geom.rect_to_rust_hitbox(
+        #             o.get_rect().expand(cheat_settings["extend_deadly_hitbox"])
+        #         ),
+        #         deadly_objects_type[o.nametype],
+        #     )
+        #     for o in self.game.objects + self.game.static_objs
+        #     if o.nametype in deadly_objects_type
+        # ]
+
+        enviroments = [
+            # cheats_rust.EnvModifier(
+            #     hitbox=cheats_rust.Hitbox(
+            #         outline=[cheats_rust.Pointf(x=p.x, y=p.y) for p in o.outline],
+            #     ),
+            #     jump_speed=o.modifier.jump_speed,
+            #     jump_height=o.modifier.jump_height,
+            #     walk_speed=o.modifier.walk_speed,
+            #     run_speed=o.modifier.run_speed,
+            #     gravity=o.modifier.gravity,
+            #     jump_override=o.modifier.jump_override,
+            # )
+            # for o in self.game.physics_engine.env_tiles
+        ]
+
+        player_direction = None
+        match player.direction:
+            case player.DIR_N:
+                player_direction = search.Direction.N
+            case player.DIR_E:
+                player_direction = search.Direction.E
+            case player.DIR_S:
+                player_direction = search.Direction.S
+            case player.DIR_W:
+                player_direction = search.Direction.W
+
+        initial_state = search.PhysState(
+            player=search.PlayerState(
+                x=player.x,
+                y=player.y,
+
+                vx=player.x_speed,
+                vy=player.y_speed,
+                base_vx=player.base_x_speed,
+                base_vy=player.base_y_speed,
+
+                jump_override=player.jump_override,
+                direction=player_direction,
+                in_the_air=player.in_the_air,
+                can_jump=player.can_jump,
+                running=player.running,
+                stamina=player.stamina,
+
+                speed_multiplier=player.speed_multiplier,
+                jump_multiplier=player.jump_multiplier,
+            ),
+            settings=settings.physics_settings(),
+        )
+        static_state = search.StaticState(
+            objects=static_objects,
+            environments=enviroments,
+        )
+        return settings, initial_state, static_state

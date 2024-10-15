@@ -60,6 +60,11 @@ class PathfindingSettings(Form):
         label="Timeout",
     )
 
+    validate_transitions = BooleanField(
+        default=False,
+        label="Validate transitions",
+    )
+
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]
 
 __lock: RLock = RLock()

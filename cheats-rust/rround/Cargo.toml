@@ -8,4 +8,4 @@ libm = "0.2.8"
 rand = "0.8.5"
 
 [dev-dependencies]
-pyo3 = "0.22.4"
+pyo3 = { workspace = true }
