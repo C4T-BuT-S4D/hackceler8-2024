@@ -11,3 +11,8 @@ moderngl == 5.10.0
 pyperclip == 1.9.0
 # https://github.com/moderngl/moderngl-window/pull/195, https://github.com/moderngl/moderngl-window/pull/194
 -e git+https://github.com/implr/moderngl-window.git@d089e9b1499449f59d0b138e8501cbeae50844bd#egg=moderngl_window
+
+
+# CBS cheats-related
+Flask == 3.0.3
+WTForms == 3.1.2

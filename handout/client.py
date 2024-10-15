@@ -28,6 +28,8 @@ import moderngl_window as mglw
 
 # CBS customization imports
 from game import constants
+from cheats.server import run_cheats_server
+from cheats.settings import init_settings
 
 # A silly monkeypatch to work around mglw not allowing to pass in a parent parser
 mglw._orig_create_parser = mglw.create_parser
@@ -39,6 +41,10 @@ mglw.create_parser = _create_parser
 class Hx8Client(venator_gui.Hackceler8):
     def __init__(self, **kwargs):
         log.setup_logging(self.argv, file_prefix='client')
+
+        init_settings()
+        self.cheats_server_thread = run_cheats_server(self.argv.cheats_port)
+
         net = None
         if not self.argv.standalone:
             net = network.NetworkConnection.create_client(
@@ -66,6 +72,9 @@ class Hx8Client(venator_gui.Hackceler8):
         )
         parser.add_argument(
             '--port', nargs='?', type=int, default=8888, help='Server port'
+        )
+        parser.add_argument(
+            "--cheats-port", nargs="?", type=int, default=8889, help="Local cheats server bind port"
         )
         parser.add_argument(
             '--cert',

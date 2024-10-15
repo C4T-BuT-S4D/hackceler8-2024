@@ -26,6 +26,7 @@ from game.components.boss.bg import BossBG
 
 # cheats imports
 import time
+from cheats.settings import get_settings
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
 
@@ -95,6 +96,8 @@ class Hackceler8(gfx.Window):
         self.camera.move_to(player_centered)
 
     def draw(self):
+        cheats_settings = get_settings() # retrieve cheats settings only once per draw
+
         if self.game is None:
             mglw.ContextRefs.WINDOW.set_icon(os.path.abspath("resources/character/32bit/main32.PNG"))
             self.wnd.ctx.clear(color=(0, 0.5, 0, 1))
@@ -144,7 +147,7 @@ class Hackceler8(gfx.Window):
         self.main_layer.add_many(o.get_draw_info() for o in self.game.objects if o.render_above_player)
         self.main_layer.draw(); self.main_layer.clear()
 
-        self._draw_debug_ui()
+        self._draw_debug_ui(cheats_settings)
 
         self.gui_camera.update()
         self.gui_camera.use()
@@ -287,7 +290,8 @@ class Hackceler8(gfx.Window):
             return
 
         if k == Keys.BACKSPACE:
-            self.tick_once()
+            for _ in range(get_settings()["slow_ticks_count"]):
+                self.tick_once()
             return
         
         if k == Keys.R and modifiers.ctrl:
@@ -400,7 +404,7 @@ class Hackceler8(gfx.Window):
         while self.draws and now - self.draws[0] > 3:
             self.draws.pop(0)
 
-    def _draw_debug_ui(self):
+    def _draw_debug_ui(self, cheats_settings: dict):
         objs = []
         for o in (
             self.game.objects +
@@ -440,36 +444,37 @@ class Hackceler8(gfx.Window):
                     logging.warning(f"skipped object {o.nametype}")
 
             if color:
-                objs.append(gfx.lrtb_rectangle_outline(
-                    o.x1,
-                    o.x2,
-                    o.y2,
-                    o.y1,
-                    color,
-                    border=3,
-                ))
-
-                # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
-                if o.nametype == "Enemy" and o.can_melee:
-                    dist = o.melee_range
+                if cheats_settings["draw_hitboxes"]:
                     objs.append(gfx.lrtb_rectangle_outline(
-                        o.x - dist,
-                        o.x + dist,
-                        o.y + dist,
-                        o.y - dist,
-                        (255, 100, 0, 255),
-                    ))
-                elif (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
-                    dist = modifier.min_distance
-                    objs.append(gfx.lrtb_rectangle_outline(
-                        o.x1 - dist,
-                        o.x2 + dist,
-                        o.y2 + dist,
-                        o.y1 - dist,
-                        (255, 255, 0, 255),
+                        o.x1,
+                        o.x2,
+                        o.y2,
+                        o.y1,
+                        color,
+                        border=cheats_settings["object_hitbox"],
                     ))
 
-                if o.nametype not in {"Wall"}:
+                    # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
+                    if o.nametype == "Enemy" and o.can_melee:
+                        dist = o.melee_range
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            o.x - dist,
+                            o.x + dist,
+                            o.y + dist,
+                            o.y - dist,
+                            (255, 100, 0, 255),
+                        ))
+                    elif (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
+                        dist = modifier.min_distance
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            o.x1 - dist,
+                            o.x2 + dist,
+                            o.y2 + dist,
+                            o.y1 - dist,
+                            (255, 255, 0, 255),
+                        ))
+
+                if cheats_settings["draw_names"] and o.nametype not in {"Wall"}:
                     text = f"{o.nametype}"
                     if o.nametype == "warp":
                         text += f" to {o.map_name}"

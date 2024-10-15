@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Neplox Cheat Engine</title>
+  <link rel="stylesheet" href="/assets/bulma.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #262124;
+      --foreground: #ebebdf;
+      --theme: #ef5902;
+    }
+
+    .text-light {
+      color: var(--foreground);
+    }
+
+    .text-dark {
+      color: var(--background);
+    }
+
+    .text-theme {
+      color: var(--theme);
+    }
+
+    .theme-colors {
+      background-color: var(--background);
+      color: var(--foreground);
+    }
+    
+    .theme-colors-light {
+      background-color: var(--foreground);
+      color: var(--background);
+    }
+
+    body {
+      font-family: 'Roboto Mono', monospace;
+    }
+  </style>
+</head>
+
+<body class="py-4 px-5 theme-colors">
+  <header class="mb-4">
+    <nav class="navbar is-dark theme-colors">
+      <div class="navbar-brand is-flex">
+        <figure class="image is-64x64">
+          <img src="/assets/neplox.svg" alt="Neplox">
+        </figure>
+        <a class="navbar-item is-size-5 text-light" style="vertical-align: middle;" href="{{ url_for('index') }}">Settings</a>
+      </div>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+
+</html>
