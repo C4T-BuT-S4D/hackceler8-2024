@@ -86,6 +86,9 @@ class Hackceler8(gfx.Window):
         pass
 
     def _center_camera_to_player(self):
+        if not self.game.ready or not self.game.map_loaded:
+            return
+
         screen_center_x = self.game.player.x - (self.camera.viewport_width / 2)
         screen_center_y = self.game.player.y - (self.camera.viewport_height / 2)
 
@@ -111,7 +114,7 @@ class Hackceler8(gfx.Window):
     def draw(self):
         cheats_settings = get_settings() # retrieve cheats settings only once per draw
 
-        if self.game is None:
+        if self.game is None or not self.game.ready or not self.game.map_loaded:
             mglw.ContextRefs.WINDOW.set_icon(os.path.abspath("resources/character/32bit/main32.PNG"))
             self.wnd.ctx.clear(color=(0, 0.5, 0, 1))
             gfx.draw_txt("loading", gfx.FONT_PIXEL[60], "Loading game...",
@@ -389,13 +392,15 @@ class Hackceler8(gfx.Window):
                 self.game.raw_pressed_keys = set(k for k in tick_to_apply.keys)
             else:
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
-        player = self.game.player
-        walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
-        if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
-            self.game.raw_pressed_keys.discard(Keys.LSHIFT)
-        if get_settings()["semirun_100"]:
-            if player.stamina == 100:
-                self.game.raw_pressed_keys.add(Keys.LSHIFT)
+
+        # Automatic semi-sprinting and stamina management
+        if (player := self.game.player):
+            walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
+            if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
+                self.game.raw_pressed_keys.discard(Keys.LSHIFT)
+            if get_settings()["semirun_100"]:
+                if player.stamina == 100:
+                    self.game.raw_pressed_keys.add(Keys.LSHIFT)
 
         # TODO: get from settings
         if self.recording_enabled and time.time() - self.last_save > 5:
