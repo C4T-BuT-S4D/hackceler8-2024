@@ -2,11 +2,12 @@ use core::hash::Hash;
 use std::hash::Hasher;
 
 use pyo3::{pyclass, pymethods};
+use serde::{Deserialize, Serialize};
 
 use crate::geometry::{Pointf, Rectangle};
 
 #[pyclass]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Hitbox {
     pub rect: Rectangle,
 }
@@ -56,11 +57,5 @@ impl Hitbox {
 
     pub fn get_lowest_point(&self) -> f64 {
         self.rect.y1
-    }
-}
-
-impl Hitbox {
-    pub fn get_rect(&self) -> Rectangle {
-        self.rect.clone()
     }
 }

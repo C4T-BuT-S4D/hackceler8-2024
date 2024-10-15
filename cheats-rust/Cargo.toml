@@ -3,6 +3,9 @@ resolver = "2"
 
 members = ["rround", "search"]
 
+[profile.release]
+debug = 1
+
 [profile.opt]
 inherits = "release"
 lto = true

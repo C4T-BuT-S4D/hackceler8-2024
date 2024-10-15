@@ -1,9 +1,10 @@
 use pyo3::pyclass;
+use serde::{Deserialize, Serialize};
 
 use crate::settings::{GameMode, SearchSettings};
 
 #[pyclass(eq)]
-#[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Hash, Serialize, Deserialize)]
 pub enum Move {
     NONE,
     A,
@@ -65,7 +66,7 @@ impl Move {
 }
 
 #[pyclass(eq)]
-#[derive(PartialEq, Eq, Debug, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Hash, Serialize, Deserialize)]
 pub enum Direction {
     N,
     S,

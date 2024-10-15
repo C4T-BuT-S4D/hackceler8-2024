@@ -26,6 +26,7 @@ from game.components.boss.bg import BossBG
 
 # cheats imports
 import time
+import secrets
 from cheats.settings import get_settings
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
@@ -1004,7 +1005,26 @@ class Hackceler8(gfx.Window):
             static_state=static_state,
         )
         if not path:
-            print("Path not found")
+            logging.warning("Path not found")
+
+            tmp_dir = os.path.join("/tmp", secrets.token_urlsafe(16))
+            os.makedirs(tmp_dir)
+            settings_path = os.path.join(tmp_dir, "settings.json")
+            initial_state_path = os.path.join(tmp_dir, "initial_state.json")
+            target_state_path = os.path.join(tmp_dir, "target_state.json")
+            static_state_path = os.path.join(tmp_dir, "static_state.json")
+
+            with open(settings_path, "w") as f:
+                f.write(search.serialize_settings(settings))
+            with open(initial_state_path, "w") as f:
+                f.write(search.serialize_state(initial_state))
+            with open(target_state_path, "w") as f:
+                f.write( search.serialize_state(target_state))
+            with open(static_state_path, "w") as f:
+                f.write(search.serialize_static_state(static_state))
+
+            logging.warning(f"Path not found, saved to {tmp_dir}")
+
         else:
             self.ticks_to_apply = []
             for move, shift, state in path:

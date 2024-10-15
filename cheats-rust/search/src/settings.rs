@@ -1,23 +1,24 @@
 use pyo3::{pyclass, pymethods};
+use serde::{Deserialize, Serialize};
 
 use crate::moves::Move;
 
 #[pyclass(eq)]
-#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum GameMode {
     Scroller,
     Platformer,
 }
 
 #[pyclass]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct PhysicsSettings {
     pub mode: GameMode,
     pub simple_geometry: bool,
 }
 
 #[pyclass]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchSettings {
     pub mode: GameMode,
     pub timeout: u64,

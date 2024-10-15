@@ -5,6 +5,7 @@ use std::{
 use std::hash::{Hash, Hasher};
 
 use pyo3::{pyclass, pymethods};
+use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug)]
 #[pyclass]
@@ -100,7 +101,7 @@ impl Div<f64> for Pointf {
 }
 
 #[pyclass]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Rectangle {
     pub x1: f64,
     pub x2: f64,

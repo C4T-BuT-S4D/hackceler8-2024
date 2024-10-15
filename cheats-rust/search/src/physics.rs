@@ -1,10 +1,8 @@
 use core::hash::Hash;
-use std::hash;
 use std::hash::Hasher;
 
-use hashbrown::HashMap;
 use pyo3::prelude::*;
-use static_init::dynamic;
+use serde::{Deserialize, Serialize};
 
 use crate::player::PlayerState;
 use crate::settings::SearchSettings;
@@ -21,37 +19,8 @@ pub const PLAYER_JUMP_SPEED: f64 = 320.0;
 pub const PLAYER_MOVEMENT_SPEED: f64 = 160.0;
 pub const GRAVITY_CONSTANT: f64 = 0.1;
 
-#[dynamic]
-static mut ROUND_CACHE: HashMap<HashableF64, f64> = HashMap::new();
-
-#[derive(Debug, Copy, Clone)]
-struct HashableF64(f64);
-
-impl HashableF64 {
-    fn key(&self) -> u64 {
-        self.0.to_bits()
-    }
-}
-
-impl hash::Hash for HashableF64 {
-    fn hash<H>(&self, state: &mut H)
-    where
-        H: hash::Hasher,
-    {
-        self.key().hash(state)
-    }
-}
-
-impl PartialEq for HashableF64 {
-    fn eq(&self, other: &HashableF64) -> bool {
-        self.key() == other.key()
-    }
-}
-
-impl Eq for HashableF64 {}
-
 #[pyclass]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct PhysState {
     pub player: PlayerState,
     pub was_step_up_before: bool,
@@ -162,14 +131,9 @@ impl PhysState {
             self.player.can_jump = true;
             return;
         }
-        self.player.can_jump = false;
+
         self.player.move_by(0.0, -1.0);
-        let (_, list_y) = self.get_collisions_list(state, &self.player.get_hitbox());
-        for collision in list_y {
-            if collision.mpv.y > 0.0 {
-                self.player.can_jump = true;
-            }
-        }
+        self.player.can_jump = self.player_can_jump(state, &self.player.get_hitbox());
         self.player.move_by(0.0, 1.0);
     }
 
@@ -279,6 +243,18 @@ impl PhysState {
 
         (collisions_x, collisions_y)
     }
+
+    fn player_can_jump(&self, state: &StaticState, player: &Hitbox) -> bool {
+        for (o1, _) in &state.objects {
+            if o1.collides(player) {
+                let mpv = o1.get_mpv(player);
+                if rround::round(mpv.x, 2) as i32 == 0 && mpv.y > 0.0 {
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }
 
 struct Collision {
@@ -331,6 +307,14 @@ impl PartialEq for PhysState {
             }
         }
 
+        // if self.player.stamina != other.player.stamina {
+        //     return false;
+        // }
+
+        if self.was_step_up_before != other.was_step_up_before {
+            return false;
+        }
+
         true
     }
 }
@@ -353,6 +337,9 @@ impl Hash for PhysState {
                 state.write(&self.player.vy.to_le_bytes());
             }
         }
+
+        // state.write(&self.player.stamina.to_le_bytes());
+        state.write(&[self.was_step_up_before as u8]);
     }
 }
 

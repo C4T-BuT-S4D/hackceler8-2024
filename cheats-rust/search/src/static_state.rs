@@ -1,9 +1,10 @@
 use pyo3::{pyclass, pymethods};
+use serde::{Deserialize, Serialize};
 
 use crate::{env_modifier::EnvModifier, hitbox::Hitbox, objects::ObjectType};
 
 #[pyclass]
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct StaticState {
     pub objects: Vec<(Hitbox, ObjectType)>,
     pub deadly: Vec<Hitbox>,

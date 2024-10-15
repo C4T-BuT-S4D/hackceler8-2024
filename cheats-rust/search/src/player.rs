@@ -1,11 +1,12 @@
 use pyo3::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::geometry::{Pointf, Rectangle};
 use crate::hitbox::Hitbox;
 use crate::moves::Direction;
 
 #[pyclass]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct PlayerState {
     #[pyo3(get, set)]
     pub x: f64,

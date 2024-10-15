@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::BinaryHeap, sync::atomic::AtomicUsize, time::SystemTime};
 
 use hashbrown::HashMap;
-use pyo3::{pyclass, pyfunction, pymethods, Python};
+use pyo3::prelude::*;
 use rayon::prelude::*;
 
 use crate::static_state::StaticState;
@@ -65,8 +65,8 @@ fn heuristic(
 
     let xticks = (target_state.x - current_state.x).abs() / (PLAYER_MOVEMENT_SPEED * 1.5 * TICK_S);
     let yticks = (target_state.y - current_state.y).abs() / (y_speed * TICK_S);
-    f64::max(xticks, yticks) * settings.heuristic_weight
-    // (target_state.center() - current_state.center()).len() * settings.heuristic_weight
+    // f64::max(xticks, yticks) * settings.heuristic_weight
+    (target_state.center() - current_state.center()).len() * settings.heuristic_weight
     //0.0
 }
 
@@ -81,9 +81,8 @@ struct SearchResult<'a> {
 
 #[pyfunction]
 pub fn astar_search(
-    py: Python<'_>,
     settings: SearchSettings,
-    mut initial_state: PhysState,
+    initial_state: PhysState,
     target_state: PhysState,
     static_state: StaticState,
 ) -> Option<Vec<(Move, bool, PlayerState)>> {

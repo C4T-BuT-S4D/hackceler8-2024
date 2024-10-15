@@ -8,9 +8,15 @@ path = "src/lib.rs"
 name = "search"
 crate-type = ["cdylib"]
 
+[[bin]]
+name = "debug-astar"
+path = "src/main.rs"
+
 [dependencies]
 hashbrown = "0.15.0"
 pyo3 = { workspace = true }
 rayon = "1.10.0"
 static_init = "1.0.3"
 rround = { path = "../rround" }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"

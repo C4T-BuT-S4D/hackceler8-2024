@@ -1,9 +1,10 @@
 use pyo3::{pyclass, pymethods};
+use serde::{Deserialize, Serialize};
 
 use crate::hitbox::Hitbox;
 
 #[pyclass]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnvModifier {
     pub hitbox: Hitbox,
     pub jump_speed: f64,

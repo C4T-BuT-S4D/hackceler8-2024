@@ -1,5 +1,9 @@
 #![feature(let_chains)]
 
+use encoding::{
+    deserialize_settings, deserialize_state, deserialize_static_state, serialize_settings,
+    serialize_state, serialize_static_state,
+};
 use pyo3::prelude::*;
 
 use env_modifier::EnvModifier;
@@ -8,23 +12,24 @@ use hitbox::Hitbox;
 use moves::{Direction, Move};
 use objects::ObjectType;
 use physics::{get_transition, PhysState};
-use settings::{GameMode, PhysicsSettings, SearchSettings};
 use player::PlayerState;
+use settings::{GameMode, PhysicsSettings, SearchSettings};
 
 use crate::astar::astar_search;
 use crate::static_state::StaticState;
 
-mod env_modifier;
-mod geometry;
-mod hitbox;
-mod moves;
-mod objects;
-mod physics;
-mod astar;
-mod settings;
-mod static_state;
-mod player;
-mod polygon;
+pub mod astar;
+pub mod encoding;
+pub mod env_modifier;
+pub mod geometry;
+pub mod hitbox;
+pub mod moves;
+pub mod objects;
+pub mod physics;
+pub mod player;
+pub mod polygon;
+pub mod settings;
+pub mod static_state;
 
 #[pymodule]
 fn search(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -43,5 +48,13 @@ fn search(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Rectangle>()?;
     m.add_function(wrap_pyfunction!(astar_search, m)?)?;
     m.add_function(wrap_pyfunction!(get_transition, m)?)?;
+
+    m.add_function(wrap_pyfunction!(serialize_state, m)?)?;
+    m.add_function(wrap_pyfunction!(deserialize_state, m)?)?;
+    m.add_function(wrap_pyfunction!(serialize_settings, m)?)?;
+    m.add_function(wrap_pyfunction!(deserialize_settings, m)?)?;
+    m.add_function(wrap_pyfunction!(serialize_static_state, m)?)?;
+    m.add_function(wrap_pyfunction!(deserialize_static_state, m)?)?;
+
     Ok(())
 }
