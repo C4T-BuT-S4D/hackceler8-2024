@@ -20,8 +20,10 @@ fn main() {
     let static_state = deserialize_static_state(&static_state_str);
 
     settings.timeout = 10000;
+    settings.state_batch_size = 16384;
     settings.always_shift = true;
+    settings.simple_geometry = true;
 
     let path = astar_search(settings, initial_state, target_state, static_state);
-    println!("{:?}", path);
+    println!("{:?}", path.unwrap_or_default().len());
 }

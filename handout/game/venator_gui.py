@@ -854,20 +854,20 @@ class Hackceler8(gfx.Window):
 
         cheat_settings = get_settings()
         allowed_moves = []
-        # if cheat_settings["allowed_moves"].lower() not in {"", "all"}:
-        #     moves = cheat_settings["allowed_moves"].upper().split(",")
-        #     for move in moves:
-        #         allowed_moves.append(getattr(cheats_rust.Move, move))
+        if cheat_settings["allowed_moves"].lower() not in {"", "all"}:
+            moves = cheat_settings["allowed_moves"].upper().split(",")
+            for move in moves:
+                allowed_moves.append(getattr(search.Move, move))
 
         settings = search.SearchSettings(
             mode=mode,
-            timeout=10,
-            always_shift=False,
-            disable_shift=False,
+            timeout=cheat_settings["timeout"],
+            always_shift=cheat_settings["always_shift"],
+            disable_shift=cheat_settings["disable_shift"],
             allowed_moves=allowed_moves,
-            heuristic_weight=1.0,
-            simple_geometry=True,
-            state_batch_size=100,
+            heuristic_weight=cheat_settings["heuristic_weight"],
+            simple_geometry=cheat_settings["simple_geometry"],
+            state_batch_size=cheat_settings["state_batch_size"],
         )
 
         static_objects = [

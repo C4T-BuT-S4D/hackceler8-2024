@@ -58,12 +58,50 @@ class PathfindingSettings(Form):
     timeout = IntegerField(
         default=5,
         label="Timeout",
+        description="Timeout for pathfinding in seconds",
     )
 
     validate_transitions = BooleanField(
         default=False,
         label="Validate transitions",
     )
+
+    always_shift = BooleanField(
+        default=True,
+        label="Always shift",
+        description="Always shift when pathfinding",
+    )
+
+    disable_shift = BooleanField(
+        default=False,
+        label="Disable shift",
+        description="Disable shift when pathfinding",
+    )
+
+    allowed_moves = StringField(
+        default="",
+        label="Allowed moves",
+        description="Comma-separated list of moves to allow",
+    )
+
+    heuristic_weight = FloatField(
+        default=1.0,
+        label="Heuristic weight",
+        description="Weight of heuristic in A*",
+    )
+
+    simple_geometry = BooleanField(
+        default=False,
+        label="Simple geometry",
+        description="Use simple geometry for pathfinding",
+    )
+
+    state_batch_size = IntegerField(
+        default=16384,
+        label="State batch size",
+        description="Number of states to process in batch",
+    )
+
 
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]
 
