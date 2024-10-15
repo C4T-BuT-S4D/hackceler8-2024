@@ -66,7 +66,7 @@ class Flags(enum.Enum):
     CIRCLE = 1
     OUTLINE = 1 << 1
     SOFT = 1 << 2
-
+    LINE = 1 << 3
 
 @dataclass(frozen=True, slots=True)
 class ShapeDrawParams(BaseDrawParams):
@@ -115,6 +115,11 @@ def lrtb_rectangle_filled(left: float, right: float, top: float, bottom: float, 
 def rectangle_filled(x: float, y: float, w: float, h: float, color: Color) -> ShapeDrawParams:
     assert len(color) == 4
     return ShapeDrawParams(x=x-w/2, xr=x+w/2, y=y-h/2, yt=y+h/2, color=color)
+
+
+def line(x1: float, y1: float, x2: float, y2: float, color: Color, border_width: float = 1) -> ShapeDrawParams:
+    assert len(color) == 4
+    return ShapeDrawParams(x=x1, xr=x2, y=y1, yt=y2, color=color, flags=Flags.LINE.value, border_width=border_width)
 
 
 FONT_SIZES = [120, 60, 40, 30, 20, 18, 15, 8]

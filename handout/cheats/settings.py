@@ -40,6 +40,17 @@ class RenderingSettings(Form):
         label="Draw object hitboxes",
     )
 
+    draw_lines = BooleanField(
+        default=False,
+        label="Draw lines to items",
+    )
+
+    track_objects = StringField(
+        default="",
+        label="Track objects",
+        description="Comma-separated list of objects to track",
+    )
+
 
 class PathfindingSettings(Form):
     title = "Pathfinding"

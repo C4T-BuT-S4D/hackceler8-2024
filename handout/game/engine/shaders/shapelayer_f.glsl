@@ -19,7 +19,7 @@ const int f_CIRCLE_FILLED  = 1;
 const int f_RECTANGLE_OUTLINE = 2;
 const int f_CIRCLE_OUTLINE = 3;
 const int f_CIRCLE_FILLED_SOFT = 5;
-
+const int f_LINE = 8;
 in FragData {
     vec4 fillColor;
     vec2 uv;
@@ -47,6 +47,10 @@ void main() {
         }
         f_color = inData.fillColor;
         if (inData.flags == f_CIRCLE_FILLED_SOFT && dis > 0.1) f_color[3] = 2.5 * (0.5 - dis);
+    } else if (inData.flags == f_LINE) {
+        // For a line, we don't need to discard any fragments
+        // The line shape is determined in the geometry shader
+        f_color = inData.fillColor;
     } else {
         vec2 b = vec2(inData.borderWidth/inData.deform, inData.borderWidth);
         // if OUTLINE and zero border, we're drawing the outline with tris, skip the discard mechanism

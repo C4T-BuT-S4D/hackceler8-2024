@@ -22,6 +22,7 @@ uniform Projection {
 } proj;
 
 const int f_RECTANGLE_OUTLINE = 2;
+const int f_LINE = 8;
 
 in PointData {
     vec2 tr;
@@ -95,6 +96,26 @@ void main() {
         sizeV.x *= -1;   // flip back right (now == original sizeV)
         Emit(bl + sizeV, vec2(0), 0, 0);        // 10
 
+    } else if (inData[0].flags == f_LINE) {
+        // Draw a line
+        vec4 start = bl;
+        vec4 end = tr;
+        
+        // Calculate the direction and length of the line
+        vec4 lineDir = end - start;
+        float lineLength = length(lineDir);
+        
+        // Normalize the direction
+        lineDir = normalize(lineDir);
+        
+        // Calculate perpendicular direction for line thickness
+        vec4 perpDir = vec4(-lineDir.y, lineDir.x, 0, 0) * inData[0].borderWidth;
+        
+        // Emit vertices for the line (as a thin rectangle)
+        Emit(start - perpDir, vec2(0, 0), 0, 1);
+        Emit(start + perpDir, vec2(0, 1), 0, 1);
+        Emit(end - perpDir, vec2(1, 0), 0, 1);
+        Emit(end + perpDir, vec2(1, 1), 0, 1);
     } else {    // everything else
         // uv-space border width, calculated in a very stupid way
         float borderWidth = distance(proj.matrix*bl, proj.matrix*(bl + vec4(inData[0].borderWidth,0,0,0)));

@@ -65,8 +65,19 @@ class Hackceler8(gfx.Window):
         self.recording_enabled = False
         self.screenshot_recordings = []
 
+        # map item name to map name
+        self.item_mapping: dict[str, str] = {}
+        self.map_connections: dict[str, list[str]] = {}
+        self.map_warps: dict[(str, str), (int, int)] = {}
+        self.item_locations: dict[str, (int, int)] = {}
+
+        self.paths_built_for: Optional[str] = None
+        self.item_paths: dict[str, list[str]] = {}
+
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
+
+        self._build_item_mapping()
 
     # Do not resize anything. This way the regular camera will scale, and gui is drawn separately anyway.
     def on_resize(self, width, height):
@@ -405,7 +416,11 @@ class Hackceler8(gfx.Window):
             self.draws.pop(0)
 
     def _draw_debug_ui(self, cheats_settings: dict):
+        # Build item paths for the current map.
+        self._build_item_paths()
+
         objs = []
+
         for o in (
             self.game.objects +
             self.game.stateful_objects +
@@ -488,37 +503,25 @@ class Hackceler8(gfx.Window):
                     if x >= 0 and y <= 0 and x <= self.camera.viewport_width and y >= -self.camera.viewport_height:
                         gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
                                  x, y, color=color)
+                        
+                if cheats_settings["draw_lines"] and o.nametype in {"Item"}:
+                    if o.nametype == "Item":
+                        objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
 
-                # if cheats_settings["draw_lines"]:
-                #     if o.nametype == "Item":
-                #         line_color = getattr(
-                #             arcade.color, (o.color or "").upper(), None
-                #         )
-                #         if line_color is None:
-                #             logging.debug(
-                #                 f"failed to get line color for item of color {o.color}, will use the default color"
-                #             )
-                #             line_color = color
+        if cheats_settings["track_objects"]:
+            tracked_objects = list(map(lambda x: x.strip(), cheats_settings["track_objects"].split(",")))
+            for item_name, map_name in self.item_mapping.items():
+                if item_name in tracked_objects:
+                    if map_name == self.game.current_map:
+                        x, y = self.item_locations[item_name]
+                        objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
+                    elif self.game.current_map in self.item_paths[item_name]:
+                        cur_idx = self.item_paths[item_name].index(self.game.current_map)
+                        next_map_name = self.item_paths[item_name][cur_idx + 1]
+                        if (map_name, next_map_name) in self.map_warps:
+                            x, y = self.map_warps[(self.game.current_map, next_map_name)]
+                            objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
 
-                #         arcade.draw_line(
-                #             start_x=self.game.player.x,
-                #             start_y=self.game.player.y,
-                #             end_x=abs(rect.x1() + rect.x2()) / 2,
-                #             end_y=abs(rect.y1() + rect.y2()) / 2,
-                #             color=line_color,
-                #             line_width=2,
-                #         )
-
-                #     if o.nametype == "Portal":
-                #         arcade.draw_line(
-                #             start_x=o.x,
-                #             start_y=o.y,
-                #             end_x=o.dest.x,
-                #             end_y=o.dest.y,
-                #             color=arcade.color.PURPLE,
-                #             line_width=2,
-                #         )
-                    # render lines to something else as well
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
 
@@ -701,3 +704,49 @@ class Hackceler8(gfx.Window):
 
     def _reset_recording(self):
         self.game.current_recording = []
+
+    def _build_item_mapping(self):
+        self.item_mapping = {}
+
+        # map -> list of connected maps
+        for map_name, map_attrs in self.game.maps_dict.items():
+            self.map_connections[map_name] = set()
+            for obj in map_attrs.tiled_map.objects + map_attrs.tiled_map.stateful_objects:
+                if obj.nametype == "warp":
+                    self.map_connections[map_name].add(obj.map_name)
+                    self.map_warps[(map_name, obj.map_name)] = (obj.x, obj.y)
+                if obj.nametype == "Item":
+                    self.item_mapping[obj.name] = map_name
+                    self.item_locations[obj.name] = (obj.x, obj.y)
+    def _build_item_paths(self):
+        if self.paths_built_for == self.game.current_map:
+            return
+        
+        if self.game.current_map is None:
+            self.paths_built_for = None
+            self.item_paths = {}
+            return
+
+        # bfs
+        print('start bfs', self.game.current_map, self.map_connections)
+        q = [self.game.current_map]
+        prev = {}
+        while q:
+            map_name = q.pop(0)
+            for neighbor in self.map_connections[map_name]:
+                if neighbor not in prev and neighbor != map_name:
+                    prev[neighbor] = map_name
+                    q.append(neighbor)
+        
+        print('bfs done', prev)
+
+        for item_name, map_name in self.item_mapping.items():
+            path = [map_name]
+            while map_name := prev.get(map_name, None):
+                path.append(map_name)
+            path.reverse()
+            self.item_paths[item_name] = path
+
+        print('item paths', self.item_paths)
+
+        self.paths_built_for = self.game.current_map
