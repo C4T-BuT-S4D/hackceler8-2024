@@ -253,10 +253,6 @@ class Hackceler8(gfx.Window):
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
 
-        macros = [
-            ['aw'] + ['a']*50
-        ] # TODO: get from settings
-
         if k in {
             Keys.NUMBER_1,
             Keys.NUMBER_2,
@@ -268,14 +264,23 @@ class Hackceler8(gfx.Window):
             Keys.NUMBER_8,
             Keys.NUMBER_9,
         } and modifiers.alt:
+            macros = get_settings()["macros"]
+
             macro_index = ord(k.value[0]) - ord(Keys.NUMBER_1.value[0])
             if macro_index < 0 or macro_index >= len(macros):
                 logging.error(f'bad macro index "{macro_index}"')
                 return
-            macro = macros[macro_index]
-            if not isinstance(macro, list):
-                logging.error(f'bad macro (not list) "{macro}"')
+
+            try:
+                macro = eval(macros[macro_index].keys)
+            except Exception as e:
+                logging.error(f'bad macro "{macros[macro_index].name}" (eval error): {e}')
                 return
+
+            if not isinstance(macro, list):
+                logging.error(f'bad macro "{macros[macro_index].name}" (eval result is not a list): "{macro}"')
+                return
+
             macro_ticks = []
             for macro_tick in macro:
                 tick_keys = set()
@@ -289,6 +294,8 @@ class Hackceler8(gfx.Window):
                         return
                     tick_keys.add(key_v)
                 macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False))
+
+            logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)
             return
 
