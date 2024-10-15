@@ -478,15 +478,37 @@ class Hackceler8(gfx.Window):
                             o.y + dist,
                             o.y - dist,
                             (255, 100, 0, 255),
+                            border=cheats_settings["object_hitbox"]
+                        ))
+
+                        # this is hardcoded in code, update it if changed
+                        modifier_dist = 80
+                        objs.append(gfx.circle_outline(
+                            o.x,
+                            o.y,
+                            modifier_dist,
+                            (255, 255, 0, 255),
+                            border_width=cheats_settings["object_hitbox"]
                         ))
                     elif (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
                         dist = modifier.min_distance
-                        objs.append(gfx.lrtb_rectangle_outline(
-                            o.x1 - dist,
-                            o.x2 + dist,
-                            o.y2 + dist,
-                            o.y1 - dist,
+                        objs.append(gfx.circle_outline(
+                            o.x,
+                            o.y,
+                            dist,
                             (255, 255, 0, 255),
+                            border_width=cheats_settings["object_hitbox"]
+                        ))
+
+                    if o.nametype == "Player":
+                        # Draw a point at the player's position
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            self.game.player.x,
+                            self.game.player.x,
+                            self.game.player.y,
+                            self.game.player.y,
+                            color,
+                            border=cheats_settings["object_hitbox"]
                         ))
 
                 if cheats_settings["draw_names"] and o.nametype not in {"Wall"}:
@@ -718,6 +740,7 @@ class Hackceler8(gfx.Window):
                 if obj.nametype == "Item":
                     self.item_mapping[obj.name] = map_name
                     self.item_locations[obj.name] = (obj.x, obj.y)
+
     def _build_item_paths(self):
         if self.paths_built_for == self.game.current_map:
             return
