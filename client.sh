@@ -19,6 +19,11 @@ else
     source env/bin/activate
 fi
 
+pushd ../cheats-rust/search
+maturin build --profile opt -i $(which python3)
+pip install --force-reinstall ../target/wheels/*
+popd
+
 if [ "$1" = "local" ]; then
   hostname="localhost"
   capath="./ca/CA-devel.crt"
