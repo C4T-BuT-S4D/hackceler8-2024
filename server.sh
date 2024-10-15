@@ -10,7 +10,10 @@ if [ ! -d "env" ]; then
     pip install -r requirements.txt
 
     cd env/src/moderngl-window
-    patch -p1 < $initialdir/moderngl-window-retina.patch
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        patch -p1 < $initialdir/moderngl-window-retina.patch
+    fi
+    patch -p1 < $initialdir/moderngl-paste.patch
     cd $initialdir/handout
 else
     source env/bin/activate

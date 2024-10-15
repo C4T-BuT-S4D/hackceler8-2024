@@ -1,0 +1,15 @@
+diff --git a/moderngl_window/integrations/imgui.py b/moderngl_window/integrations/imgui.py
+index 254c29a..641e24f 100644
+--- a/moderngl_window/integrations/imgui.py
++++ b/moderngl_window/integrations/imgui.py
+@@ -21,6 +21,10 @@ class ModernglWindowMixin:
+             if key in self.REVERSE_KEY_MAP:
+                 self.io.keys_down[self.REVERSE_KEY_MAP[key]] = False
+ 
++        self.io.key_ctrl = modifiers.ctrl
++        self.io.key_shift = modifiers.shift
++        self.io.key_alt = modifiers.alt
++
+     def _mouse_pos_viewport(self, x, y):
+         """Make sure mouse coordinates are correct with black borders"""
+         return (
