@@ -544,6 +544,10 @@ class Hackceler8(gfx.Window):
                             x, y = self.map_warps[(self.game.current_map, next_map_name)]
                             objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
 
+        if self.recording_enabled:
+            pos = list(self.camera.position)
+            objs.append(gfx.circle_filled(int(pos[0]) + 650, int(pos[1]) + 120, 30, (255, 0, 0, 255)))
+
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
 
