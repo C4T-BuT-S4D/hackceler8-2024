@@ -3,5 +3,11 @@ resolver = "2"
 
 members = ["rround", "search"]
 
+[profile.opt]
+inherits = "release"
+lto = true
+codegen-units = 1
+opt-level = 3
+
 [workspace.dependencies]
 pyo3 = "0.22.4"

@@ -8,8 +8,8 @@ use crate::static_state::StaticState;
 use crate::{
     moves::Move,
     physics::{PhysState, PLAYER_JUMP_SPEED, PLAYER_MOVEMENT_SPEED, TICK_S},
-    settings::{GameMode, SearchSettings},
     player::PlayerState,
+    settings::{GameMode, SearchSettings},
 };
 
 const TARGET_PRECISION: f64 = 16.0;
@@ -114,117 +114,116 @@ pub fn astar_search(
 
     let mut to_process = Vec::new();
 
-    py.allow_threads(|| {
-        loop {
-            if start.elapsed().unwrap().as_secs() > settings.timeout {
-                break;
-            }
-
-            to_process.drain(..);
-            while to_process.len() < settings.state_batch_size && let Some(SearchNode {
-                                                                               cost: _,
-                                                                               ticks,
-                                                                               state,
-                                                                           }) = open_set.pop()
-            {
-                to_process.push((ticks, state));
-            }
-
-            if to_process.is_empty() {
-                break;
-            }
-
-            println!(
-                "processed {iter:?} iterations, to_process: {:} elems",
-                to_process.len()
-            );
-
-            let next_states: Vec<_> = to_process
-                .par_iter()
-                .filter_map(|(ticks, state)| {
-                    if *g_score.get(state).unwrap() < *ticks {
-                        return None;
-                    }
-
-                    iter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
-                    let mut next_states = Vec::new();
-
-                    for &next_move in &allowed_moves {
-                        for &shift_pressed in shift_variants.iter() {
-                            if !settings.always_shift
-                                && shift_pressed
-                                && next_move.is_only_vertical()
-                            {
-                                continue;
-                            }
-
-                            let mut neighbor_state = *state;
-                            neighbor_state.tick(next_move, shift_pressed, &static_state, &settings);
-
-                            if neighbor_state.player.dead {
-                                continue;
-                            }
-
-                            if g_score
-                                .get(&neighbor_state)
-                                .is_some_and(|old_ticks| ticks + 1 >= *old_ticks)
-                            {
-                                continue;
-                            }
-
-                            let f_score = f64::from(ticks + 1)
-                                + heuristic(
-                                    &settings,
-                                    &target_state.player,
-                                    &neighbor_state.player,
-                                );
-
-                            next_states.push(SearchResult {
-                                prev_state: state,
-                                ticks: *ticks,
-                                f_score,
-                                next_move,
-                                shift: shift_pressed,
-                                next_state: neighbor_state,
-                            });
-                        }
-                    }
-
-                    Some(next_states)
-                })
-                .collect();
-
-            for search_results in next_states {
-                for sr in search_results {
-                    if sr.next_state.close_enough(&target_state, TARGET_PRECISION) {
-                        let mut moves = reconstruct_path(&came_from, *sr.prev_state);
-                        moves.push((sr.next_move, sr.shift, sr.next_state.player));
-                        println!(
-                            "found path: iter={:?}; ticks={:?}; elapsed={:?}",
-                            iter,
-                            sr.ticks + 1,
-                            start.elapsed().unwrap().as_secs_f32()
-                        );
-                        return Some(moves);
-                    }
-
-                    if g_score
-                        .get(&sr.next_state)
-                        .is_some_and(|old_ticks| sr.ticks + 1 >= *old_ticks)
-                    {
-                        continue;
-                    }
-
-                    came_from.insert(sr.next_state, (*sr.prev_state, sr.next_move, sr.shift));
-                    g_score.insert(sr.next_state, sr.ticks + 1);
-                    open_set.push(SearchNode::new(sr.f_score, sr.ticks + 1, sr.next_state));
-                }
-            }
+    loop {
+        if start.elapsed().unwrap().as_secs() > settings.timeout {
+            break;
         }
 
-        None
-    })
+        to_process.drain(..);
+        while to_process.len() < settings.state_batch_size
+            && let Some(SearchNode {
+                cost: _,
+                ticks,
+                state,
+            }) = open_set.pop()
+        {
+            to_process.push((ticks, state));
+        }
+
+        if to_process.is_empty() {
+            break;
+        }
+
+        println!(
+            "processed {iter:?} iterations, to_process: {:} elems",
+            to_process.len()
+        );
+
+        let next_states: Vec<_> = to_process
+            .par_iter()
+            .filter_map(|(ticks, state)| {
+                if *g_score.get(state).unwrap() < *ticks {
+                    return None;
+                }
+
+                iter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+                let mut next_states = Vec::new();
+
+                for &next_move in &allowed_moves {
+                    for &shift_pressed in shift_variants.iter() {
+                        if next_move.is_up() && state.was_step_up_before {
+                            continue;
+                        }
+
+                        if !settings.always_shift && shift_pressed && next_move.is_only_vertical() {
+                            continue;
+                        }
+
+                        let mut neighbor_state = *state;
+                        if next_move.is_up() {
+                            neighbor_state.was_step_up_before = true;
+                        }
+                        neighbor_state.tick(next_move, shift_pressed, &static_state, &settings);
+
+                        if neighbor_state.player.dead {
+                            continue;
+                        }
+
+                        if g_score
+                            .get(&neighbor_state)
+                            .is_some_and(|old_ticks| ticks + 1 >= *old_ticks)
+                        {
+                            continue;
+                        }
+
+                        let f_score = f64::from(ticks + 1)
+                            + heuristic(&settings, &target_state.player, &neighbor_state.player);
+
+                        next_states.push(SearchResult {
+                            prev_state: state,
+                            ticks: *ticks,
+                            f_score,
+                            next_move,
+                            shift: shift_pressed,
+                            next_state: neighbor_state,
+                        });
+                    }
+                }
+
+                Some(next_states)
+            })
+            .collect();
+
+        for search_results in next_states {
+            for sr in search_results {
+                if sr.next_state.close_enough(&target_state, TARGET_PRECISION) {
+                    let mut moves = reconstruct_path(&came_from, *sr.prev_state);
+                    moves.push((sr.next_move, sr.shift, sr.next_state.player));
+                    println!(
+                        "found path: iter={:?}; ticks={:?}; elapsed={:?}",
+                        iter,
+                        sr.ticks + 1,
+                        start.elapsed().unwrap().as_secs_f32()
+                    );
+                    return Some(moves);
+                }
+
+                if g_score
+                    .get(&sr.next_state)
+                    .is_some_and(|old_ticks| sr.ticks + 1 >= *old_ticks)
+                {
+                    continue;
+                }
+
+                came_from.insert(sr.next_state, (*sr.prev_state, sr.next_move, sr.shift));
+                g_score.insert(sr.next_state, sr.ticks + 1);
+                open_set.push(SearchNode::new(sr.f_score, sr.ticks + 1, sr.next_state));
+            }
+        }
+    }
+
+    None
 }
 
 fn reconstruct_path(

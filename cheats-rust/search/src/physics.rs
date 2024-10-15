@@ -54,9 +54,9 @@ impl Eq for HashableF64 {}
 #[derive(Clone, Copy, Debug)]
 pub struct PhysState {
     pub player: PlayerState,
+    pub was_step_up_before: bool,
     settings: PhysicsSettings,
     active_modifier: Option<usize>,
-    was_step_up_before: bool,
 }
 
 #[pymethods]
@@ -242,7 +242,7 @@ impl PhysState {
                 if !self.player.can_jump && !self.player.jump_override {
                     return;
                 }
-                self.player.vy = self.player.base_vy * self.player.speed_multiplier;
+                self.player.vy = self.player.base_vy * speed_multiplier;
                 self.player.in_the_air = true;
             }
             Direction::S => {

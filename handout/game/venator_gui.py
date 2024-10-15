@@ -860,7 +860,7 @@ class Hackceler8(gfx.Window):
 
         settings = search.SearchSettings(
             mode=mode,
-            timeout=1000,
+            timeout=10,
             always_shift=False,
             disable_shift=False,
             allowed_moves=allowed_moves,
@@ -948,3 +948,97 @@ class Hackceler8(gfx.Window):
             environments=enviroments,
         )
         return settings, initial_state, static_state
+
+    def mouse_press_event(self, x, y, button):
+        super().mouse_press_event(x, y, button)
+        
+        if button != 1:
+            return
+        
+        if self.game is None:
+            return
+        player = self.game.player
+
+        target_x = x * self.camera.scale + self.camera.position.x
+        target_y = (constants.SCREEN_HEIGHT - y) * self.camera.scale + self.camera.position.y
+
+        logging.info(
+            "mouse pressed at (%s, %s), player pos: (%s, %s), target: (%s, %s)",
+            x,
+            y,
+            player.x,
+            player.y,
+            target_x,
+            target_y,
+        )
+
+        settings, initial_state, static_state = self._dump_rust_state()
+
+        target_state = search.PhysState(
+            player=search.PlayerState(
+                x=target_x,
+                y=target_y,
+
+                vx=player.x_speed,
+                vy=player.y_speed,
+                base_vx=player.base_x_speed,
+                base_vy=player.base_y_speed,
+
+                jump_override=player.jump_override,
+                direction=search.Direction.N,
+                in_the_air=player.in_the_air,
+                can_jump=player.can_jump,
+                running=player.running,
+                stamina=player.stamina,
+
+                speed_multiplier=player.speed_multiplier,
+                jump_multiplier=player.jump_multiplier,
+            ),
+            settings=settings.physics_settings(),
+        )
+
+        path = search.astar_search(
+            settings=settings,
+            initial_state=initial_state,
+            target_state=target_state,
+            static_state=static_state,
+        )
+        if not path:
+            print("Path not found")
+        else:
+            self.ticks_to_apply = []
+            for move, shift, state in path:
+                match move:
+                    case search.Move.W:
+                        moves = {Keys.W}
+                    case search.Move.A:
+                        moves = {Keys.A}
+                    case search.Move.D:
+                        moves = {Keys.D}
+                    case search.Move.WA:
+                        moves = {Keys.W, Keys.A}
+                    case search.Move.WD:
+                        moves = {Keys.W, Keys.D}
+                    case search.Move.S:
+                        moves = {Keys.S}
+                    case search.Move.SA:
+                        moves = {Keys.S, Keys.A}
+                    case search.Move.SD:
+                        moves = {Keys.S, Keys.D}
+                    case search.Move.NONE:
+                        moves = set()
+                    case _:
+                        print("unknown move", move)
+                        continue
+
+                if shift:
+                    moves.add(Keys.LSHIFT)
+
+                self.ticks_to_apply.append(
+                    TickData(
+                        force_keys=True,
+                        keys=list(moves),
+                    )
+                )
+
+            print("path found", [x[:2] for x in path])
