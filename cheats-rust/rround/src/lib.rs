@@ -83,7 +83,7 @@ mod tests {
 
             // Generate 100 random numbers between 0 and 1000000
             for _ in 0..1000000 {
-                let x = rng.gen_range(0.0..1000000.0);
+                let x = rng.gen_range(-1000000.0..1000000.0);
                 let ndigits = rng.gen_range(0..10);
                 let result: f64 = round_func.call1((x, ndigits))?.extract()?;
                 let expected = round(x, ndigits);
@@ -100,7 +100,7 @@ mod tests {
             let builtins = PyModule::import_bound(py, "builtins")?;
             let round_func = builtins.getattr("round")?;
 
-            for i in 0..100 {
+            for i in -100..=100 {
                 let x = 0.01 * i as f64;
 
                 for ndigits in 0..10 {

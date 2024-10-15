@@ -20,6 +20,10 @@ class ExtraSettings(Form):
         description="Number of ticks to emulate in slow_ticks_mode",
     )
 
+    semirun_100 = BooleanField(
+        default=True,
+        label="Semi-run at stamina 100",
+    )
 
 class RenderingSettings(Form):
     title = "Rendering"
