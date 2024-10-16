@@ -86,6 +86,9 @@ class Hackceler8(gfx.Window):
         pass
 
     def _center_camera_to_player(self):
+        if not self.game.ready or not self.game.map_loaded:
+            return
+
         screen_center_x = self.game.player.x - (self.camera.viewport_width / 2)
         screen_center_y = self.game.player.y - (self.camera.viewport_height / 2)
 
@@ -111,7 +114,7 @@ class Hackceler8(gfx.Window):
     def draw(self):
         cheats_settings = get_settings() # retrieve cheats settings only once per draw
 
-        if self.game is None:
+        if self.game is None or not self.game.ready or not self.game.map_loaded:
             mglw.ContextRefs.WINDOW.set_icon(os.path.abspath("resources/character/32bit/main32.PNG"))
             self.wnd.ctx.clear(color=(0, 0.5, 0, 1))
             gfx.draw_txt("loading", gfx.FONT_PIXEL[60], "Loading game...",
@@ -245,14 +248,12 @@ class Hackceler8(gfx.Window):
             import threading
             image = self.get_screenshot_image()
             while len(self.screenshot_recordings) > 0:
-                threading.Thread(target=lambda: self.save_screenshot_image(image, self.screenshot_recordings.pop(0), 'png')).start()
+                format = "jpeg"
+                path = self.screenshot_recordings.pop(0) + "." + format
+                threading.Thread(target=lambda: self.save_screenshot_image(image, path, format)).start()
 
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
-
-        macros = [
-            ['aw'] + ['a']*50
-        ] # TODO: get from settings
 
         if k in {
             Keys.NUMBER_1,
@@ -265,14 +266,23 @@ class Hackceler8(gfx.Window):
             Keys.NUMBER_8,
             Keys.NUMBER_9,
         } and modifiers.alt:
+            macros = get_settings()["macros"]
+
             macro_index = ord(k.value[0]) - ord(Keys.NUMBER_1.value[0])
             if macro_index < 0 or macro_index >= len(macros):
                 logging.error(f'bad macro index "{macro_index}"')
                 return
-            macro = macros[macro_index]
-            if not isinstance(macro, list):
-                logging.error(f'bad macro (not list) "{macro}"')
+
+            try:
+                macro = eval(macros[macro_index].keys)
+            except Exception as e:
+                logging.error(f'bad macro "{macros[macro_index].name}" (eval error): {e}')
                 return
+
+            if not isinstance(macro, list):
+                logging.error(f'bad macro "{macros[macro_index].name}" (eval result is not a list): "{macro}"')
+                return
+
             macro_ticks = []
             for macro_tick in macro:
                 tick_keys = set()
@@ -286,6 +296,8 @@ class Hackceler8(gfx.Window):
                         return
                     tick_keys.add(key_v)
                 macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False))
+
+            logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)
             return
 
@@ -389,10 +401,15 @@ class Hackceler8(gfx.Window):
                 self.game.raw_pressed_keys = set(k for k in tick_to_apply.keys)
             else:
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
-        player = self.game.player
-        walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
-        if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
-            self.game.raw_pressed_keys.discard(Keys.LSHIFT)
+
+        # Automatic semi-sprinting and stamina management
+        if (player := self.game.player):
+            walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
+            if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
+                self.game.raw_pressed_keys.discard(Keys.LSHIFT)
+            if get_settings()["semirun_100"]:
+                if player.stamina == 100:
+                    self.game.raw_pressed_keys.add(Keys.LSHIFT)
 
         # TODO: get from settings
         if self.recording_enabled and time.time() - self.last_save > 5:
@@ -733,8 +750,10 @@ class Hackceler8(gfx.Window):
 
     def load_recording(self):
         import json
-        # TODO: get from settings
-        filename = 'base_2024-10-14T17:14:05.400913_00452_end-recording.json'
+        filename = get_settings()["recording_filename"]
+        if filename is None:
+            logging.warning("No recording chosen in settings")
+            return
 
         recordings_dir = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
@@ -785,7 +804,7 @@ class Hackceler8(gfx.Window):
         with open(os.path.join(recordings_dir, f"{savename}.json"), "w") as f:
             json.dump(self.game.current_recording, f, indent=2)
 
-        self.screenshot_recordings.append(os.path.join(recordings_dir, f"{savename}.png"))
+        self.screenshot_recordings.append(os.path.join(recordings_dir, savename))
         self.last_save = time.time()
 
     def start_recording(self):

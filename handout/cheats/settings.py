@@ -3,13 +3,15 @@ import logging
 import os
 from copy import deepcopy
 from threading import RLock
-from typing import Callable
+from typing import Callable, TypedDict
 
 from wtforms import BooleanField
 from wtforms import FloatField
 from wtforms import Form
 from wtforms import IntegerField
 from wtforms import StringField
+
+from cheats.lib.macro import Macro
 
 class ExtraSettings(Form):
     title = "Extra"
@@ -20,6 +22,10 @@ class ExtraSettings(Form):
         description="Number of ticks to emulate in slow_ticks_mode",
     )
 
+    semirun_100 = BooleanField(
+        default=True,
+        label="Semi-run at stamina 100",
+    )
 
 class RenderingSettings(Form):
     title = "Rendering"
@@ -102,12 +108,32 @@ class PathfindingSettings(Form):
         description="Number of states to process in batch",
     )
 
+class SettingsDict(TypedDict):
+    slow_ticks_count: int
+    semirun_100: bool
+    object_hitbox: int
+    draw_names: bool
+    draw_hitboxes: bool
+    draw_lines: bool
+    track_objects: str
+    timeout: int
+    validate_transitions: bool
+    always_shift: bool
+    disable_shift: bool
+    allowed_moves: str
+    heuristic_weight: float
+    simple_geometry: bool
+    state_batch_size: int
+    recording_filename: str
+    macros: list[Macro]
+
 
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]
 
 __lock: RLock = RLock()
-__settings: dict = {
+__settings: SettingsDict = {
     "recording_filename": None,
+    "macros": [Macro(name=f"Macro {i + 1}", keys="") for i in range(9)],
 }
 
 
@@ -116,11 +142,20 @@ def init_settings():
     data = get_settings()
     for form in forms:
         data.update(**deepcopy(form.data))
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "macros.json")) as f:
+            macros = json.load(f)
+        macros = [Macro(**json.loads(m)) for m in macros]
+        # merge only those macros which exist instead of overwriting
+        for i, macro in enumerate(macros):
+            data["macros"][i] = macro
+    except Exception as e:
+        logging.warning(f"Failed to load macros from macros.json: {e}")
     logging.info(f"Initial settings: {data}")
     update_settings(lambda s: s.update(**data))
 
 
-def get_settings() -> dict:
+def get_settings() -> SettingsDict:
     with __lock:
         return deepcopy(__settings)
 
