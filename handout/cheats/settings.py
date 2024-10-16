@@ -25,6 +25,13 @@ class ExtraSettings(Form):
     semirun_100 = BooleanField(
         default=True,
         label="Semi-run at stamina 100",
+        description="Automatically toggle sprinting",
+    )
+
+    auto_recording_interval = IntegerField(
+        default=5,
+        label="Auto recording interval",
+        description="Interval between auto recordings in seconds",
     )
 
 class RenderingSettings(Form):
@@ -111,6 +118,7 @@ class PathfindingSettings(Form):
 class SettingsDict(TypedDict):
     slow_ticks_count: int
     semirun_100: bool
+    auto_recording_interval: int
     object_hitbox: int
     draw_names: bool
     draw_hitboxes: bool

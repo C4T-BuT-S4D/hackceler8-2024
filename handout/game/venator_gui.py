@@ -393,6 +393,8 @@ class Hackceler8(gfx.Window):
     # Cheats added functions
 
     def tick_once(self):
+        cheats_settings = get_settings()
+
         keys_to_restore = self.game.raw_pressed_keys.copy()
         if self.ticks_to_apply:
             tick_to_apply = self.ticks_to_apply.pop(0)
@@ -407,15 +409,13 @@ class Hackceler8(gfx.Window):
             walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
             if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
                 self.game.raw_pressed_keys.discard(Keys.LSHIFT)
-            if get_settings()["semirun_100"]:
+            if cheats_settings["semirun_100"]:
                 if player.stamina == 100:
                     self.game.raw_pressed_keys.add(Keys.LSHIFT)
 
-        # TODO: get from settings
-        if self.recording_enabled and time.time() - self.last_save > 5:
+        if self.recording_enabled and time.time() - self.last_save > cheats_settings["auto_recording_interval"]:
             self.save_recording(suffix='auto')
 
-        cheats_settings = get_settings()
         if cheats_settings["validate_transitions"]:
             settings, state, static_state = self._dump_rust_state()
             keys = self.game.raw_pressed_keys.copy()
