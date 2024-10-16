@@ -156,7 +156,7 @@ class Venator:
         self.pressed_keys = set()
 
         # cheats settings
-        self.current_recording = []
+        self.current_recording = None
 
     @property
     def won(self):
@@ -397,7 +397,9 @@ class Venator:
                 "raw_keys": [i.serialized for i in self.raw_pressed_keys],
                 "text_input": self.get_text_input(),
             }
-            self.current_recording.append(save)
+
+            if self.current_recording is not None:
+                self.current_recording.append(save)
 
         if self.is_server or self.net is None:
             return

@@ -248,7 +248,9 @@ class Hackceler8(gfx.Window):
             import threading
             image = self.get_screenshot_image()
             while len(self.screenshot_recordings) > 0:
-                threading.Thread(target=lambda: self.save_screenshot_image(image, self.screenshot_recordings.pop(0), 'png')).start()
+                format = "jpeg"
+                path = self.screenshot_recordings.pop(0) + "." + format
+                threading.Thread(target=lambda: self.save_screenshot_image(image, path, format)).start()
 
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
@@ -748,8 +750,10 @@ class Hackceler8(gfx.Window):
 
     def load_recording(self):
         import json
-        # TODO: get from settings
-        filename = 'base_2024-10-14T17:14:05.400913_00452_end-recording.json'
+        filename = get_settings()["recording_filename"]
+        if filename is None:
+            logging.warning("No recording chosen in settings")
+            return
 
         recordings_dir = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
@@ -800,7 +804,7 @@ class Hackceler8(gfx.Window):
         with open(os.path.join(recordings_dir, f"{savename}.json"), "w") as f:
             json.dump(self.game.current_recording, f, indent=2)
 
-        self.screenshot_recordings.append(os.path.join(recordings_dir, f"{savename}.png"))
+        self.screenshot_recordings.append(os.path.join(recordings_dir, savename))
         self.last_save = time.time()
 
     def start_recording(self):

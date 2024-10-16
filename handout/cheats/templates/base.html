@@ -43,7 +43,7 @@
   </style>
 </head>
 
-<body class="font-mono py-4 px-5 theme-colors" style="width: 100vw; height: 100vh;">
+<body class="font-mono py-4 px-5 theme-colors" style="min-width: 100vw; min-height: 100vh;">
   <header class="mb-4">
     <nav class="navbar is-dark theme-colors">
       <div class="navbar-brand is-flex">
@@ -51,6 +51,7 @@
           <img src="/assets/neplox.svg" alt="Neplox">
         </figure>
         <a class="navbar-item is-size-5 text-light" href="{{ url_for('index') }}">Settings</a>
+        <a class="navbar-item is-size-5 text-light" href="{{ url_for('recordings') }}">Recordings</a>
         <a class="navbar-item is-size-5 text-light" href="{{ url_for('macros') }}">Macros</a>
       </div>
     </nav>

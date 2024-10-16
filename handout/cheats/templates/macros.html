@@ -7,7 +7,7 @@
     <div class="field">
       <label class="label text-light">Macro</label>
       <div class="control">
-        <select class="select font-mono theme-colors-light" style="width: 100%;" id="macroselect">
+        <select class="select font-mono" style="width: 100%;" id="macroselect">
           {%- for macro in all_macros %}
             {%- if loop.index0 == chosen_macro %}
               <option value="{{ loop.index0 }}" label="ALT + {{ loop.index }}: {{ macro.name }}" selected></option>
@@ -21,13 +21,13 @@
     <div class="field">
       <label class="label text-light">Name</label>
       <div class="control">
-        <input class="input font-mono theme-colors-light" type="text" value="{{ all_macros[chosen_macro].name }}" name="name" />
+        <input class="input font-mono" type="text" value="{{ all_macros[chosen_macro].name }}" name="name" />
       </div>
     </div>
     <div class="field">
       <label class="label text-light">Keys</label>
       <div class="control">
-        <textarea class="textarea font-mono theme-colors-light" placeholder="Textarea" name="keys">{{ all_macros[chosen_macro].keys }}</textarea>
+        <textarea class="textarea font-mono" placeholder="Textarea" name="keys">{{ all_macros[chosen_macro].keys }}</textarea>
       </div>
       <p class="help">Macro keys in python ast format (supported with eval: ['wa', 'La'] + ['a']*50)</p>
     </div>

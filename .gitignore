@@ -6,3 +6,5 @@ logs/
 save_state
 handout/screenshots/
 handout/cheats/macros.json
+handout/cheats/recordings/*
+!handout/cheats/recordings/.keep
