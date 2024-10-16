@@ -7,10 +7,9 @@ use crate::hitbox::Hitbox;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnvModifier {
     pub hitbox: Hitbox,
+    pub name: String,
     pub jump_speed: f64,
-    pub jump_height: f64,
     pub walk_speed: f64,
-    pub run_speed: f64,
     pub gravity: f64,
     pub jump_override: bool,
 }
@@ -20,19 +19,17 @@ impl EnvModifier {
     #[new]
     pub fn new(
         hitbox: Hitbox,
+        name: String,
         jump_speed: f64,
-        jump_height: f64,
         walk_speed: f64,
-        run_speed: f64,
         gravity: f64,
         jump_override: bool,
     ) -> Self {
         EnvModifier {
             hitbox,
+            name,
             jump_speed,
-            jump_height,
             walk_speed,
-            run_speed,
             gravity,
             jump_override,
         }

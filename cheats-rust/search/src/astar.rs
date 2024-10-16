@@ -7,7 +7,7 @@ use rayon::prelude::*;
 use crate::static_state::StaticState;
 use crate::{
     moves::Move,
-    physics::{PhysState, PLAYER_JUMP_SPEED, PLAYER_MOVEMENT_SPEED, TICK_S},
+    physics::{PhysState, PLAYER_JUMP_SPEED, PLAYER_MOVEMENT_SPEED},
     player::PlayerState,
     settings::{GameMode, SearchSettings},
 };
@@ -57,16 +57,16 @@ fn heuristic(
     target_state: &PlayerState,
     current_state: &PlayerState,
 ) -> f64 {
-    // let y_speed = if settings.mode == GameMode::Platformer {
-    //     PLAYER_JUMP_SPEED
-    // } else {
-    //     PLAYER_MOVEMENT_SPEED
-    // };
+    let y_speed = if settings.mode == GameMode::Platformer {
+        PLAYER_JUMP_SPEED
+    } else {
+        PLAYER_MOVEMENT_SPEED
+    };
 
-    // let xticks = (target_state.x - current_state.x).abs() / (PLAYER_MOVEMENT_SPEED * 1.5 * TICK_S);
-    // let yticks = (target_state.y - current_state.y).abs() / (y_speed * TICK_S);
-    // f64::max(xticks, yticks) * settings.heuristic_weight
-    (target_state.center() - current_state.center()).len() * settings.heuristic_weight
+    let xticks = (target_state.x - current_state.x).abs() / PLAYER_MOVEMENT_SPEED;
+    let yticks = (target_state.y - current_state.y).abs() / y_speed;
+    f64::max(xticks, yticks) * settings.heuristic_weight
+    // (target_state.center() - current_state.center()).len() * settings.heuristic_weight
     //0.0
 }
 

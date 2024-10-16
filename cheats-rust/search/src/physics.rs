@@ -4,6 +4,7 @@ use std::hash::Hasher;
 use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::env_modifier::EnvModifier;
 use crate::player::PlayerState;
 use crate::settings::SearchSettings;
 use crate::{
@@ -15,8 +16,8 @@ use crate::{
 };
 
 pub const TICK_S: f64 = 1.0 / 60.0;
-pub const PLAYER_JUMP_SPEED: f64 = 320.0;
-pub const PLAYER_MOVEMENT_SPEED: f64 = 160.0;
+pub const PLAYER_JUMP_SPEED: f64 = 5.5;
+pub const PLAYER_MOVEMENT_SPEED: f64 = 2.3;
 pub const GRAVITY_CONSTANT: f64 = 0.1;
 
 #[pyclass]
@@ -24,20 +25,26 @@ pub const GRAVITY_CONSTANT: f64 = 0.1;
 pub struct PhysState {
     pub player: PlayerState,
     pub was_step_up_before: bool,
+    pub gravity: f64,
     settings: PhysicsSettings,
-    active_modifier: Option<usize>,
+    active_modifier: usize,
 }
 
 #[pymethods]
 impl PhysState {
     #[new]
-    pub fn new(player: PlayerState, settings: PhysicsSettings) -> Self {
-        PhysState {
+    pub fn new(player: PlayerState, settings: PhysicsSettings, state: &StaticState) -> Self {
+        let mut ps = PhysState {
             player,
             settings,
-            active_modifier: None,
+            gravity: GRAVITY_CONSTANT,
+            // Default to generic modifier.
+            active_modifier: 0,
             was_step_up_before: false,
-        }
+        };
+
+        ps.detect_env_mod(state);
+        ps
     }
 }
 
@@ -47,7 +54,7 @@ impl PhysState {
         mov: Move,
         shift_pressed: bool,
         state: &StaticState,
-        search_settings: &SearchSettings,
+        _search_settings: &SearchSettings,
     ) {
         self.player_tick(state, mov, shift_pressed);
 
@@ -65,8 +72,7 @@ impl PhysState {
         self.detect_env_mod(state);
 
         if self.player.in_the_air {
-            // TODO: env modifiers
-            self.player.vy -= GRAVITY_CONSTANT;
+            self.player.vy -= self.gravity;
         }
     }
 
@@ -79,8 +85,25 @@ impl PhysState {
 // Env modifiers
 impl PhysState {
     fn detect_env_mod(&mut self, state: &StaticState) {
-        // TODO: Implement this
-        return;
+        for (i, modifier) in state.environments.iter().skip(1).enumerate() {
+            if modifier.hitbox.collides(&self.player.get_hitbox()) {
+                if self.active_modifier != i {
+                    self.active_modifier = i;
+                    self.apply_modifier(modifier);
+                }
+                return;
+            }
+        }
+
+        self.active_modifier = 0;
+        self.apply_modifier(&state.environments[0]);
+    }
+
+    fn apply_modifier(&mut self, modifier: &EnvModifier) {
+        self.gravity = GRAVITY_CONSTANT * modifier.gravity;
+        self.player.base_vx = PLAYER_MOVEMENT_SPEED * modifier.walk_speed;
+        self.player.base_vy = PLAYER_JUMP_SPEED * modifier.jump_speed;
+        self.player.jump_override = modifier.jump_override;
     }
 }
 
@@ -220,7 +243,6 @@ impl PhysState {
             Direction::S => {
                 if self.settings.mode == GameMode::Scroller {
                     self.player.vy = -self.player.base_vx * speed_multiplier;
-                    return;
                 }
             }
         }
@@ -308,10 +330,8 @@ impl PartialEq for PhysState {
                 if self.simple_player_vy() != other.simple_player_vy() {
                     return false;
                 }
-            } else {
-                if self.player.vy != other.player.vy {
-                    return false;
-                }
+            } else if self.player.vy != other.player.vy {
+                return false;
             }
         }
 

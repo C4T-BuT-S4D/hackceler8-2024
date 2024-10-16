@@ -29,7 +29,7 @@ impl Pointf {
 
     pub fn angle(&self, other: &Pointf) -> f64 {
         let dot = self.unit_vector() * other.unit_vector();
-        180.0 - f64::acos(f64::min(f64::max(dot, -1.0), 1.0)) * 180.0 / PI
+        180.0 - f64::acos(dot.clamp(-1.0, 1.0)) * 180.0 / PI
     }
 
     pub fn len(&self) -> f64 {

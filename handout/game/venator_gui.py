@@ -916,20 +916,33 @@ class Hackceler8(gfx.Window):
             if o.nametype in deadly_objects_type
         ]
 
-        enviroments = [
-            # cheats_rust.EnvModifier(
-            #     hitbox=cheats_rust.Hitbox(
-            #         outline=[cheats_rust.Pointf(x=p.x, y=p.y) for p in o.outline],
-            #     ),
-            #     jump_speed=o.modifier.jump_speed,
-            #     jump_height=o.modifier.jump_height,
-            #     walk_speed=o.modifier.walk_speed,
-            #     run_speed=o.modifier.run_speed,
-            #     gravity=o.modifier.gravity,
-            #     jump_override=o.modifier.jump_override,
-            # )
-            # for o in self.game.physics_engine.env_tiles
+        environments = [
+            search.EnvModifier(
+                hitbox=search.Hitbox(
+                    search.Rectangle(o.x1, o.x2, o.y1, o.y2),
+                ),
+                name=o.modifier.name,
+                jump_speed=o.modifier.jump_speed,
+                walk_speed=o.modifier.walk_speed,
+                gravity=o.modifier.gravity,
+                jump_override=o.modifier.jump_override,
+            )
+            for o in self.game.physics_engine.env_tiles
         ]
+
+        # Add generic env to fallback to.
+        environments = [
+            search.EnvModifier(
+                hitbox=search.Hitbox(
+                    search.Rectangle(0, 0, 0, 0),
+                ),
+                name="generic",
+                jump_speed=1.0,
+                walk_speed=1.0,
+                gravity=1.0,
+                jump_override=False,
+            )
+        ] + environments
 
         player_direction = None
         match player.direction:
@@ -941,6 +954,11 @@ class Hackceler8(gfx.Window):
                 player_direction = search.Direction.S
             case player.DIR_W:
                 player_direction = search.Direction.W
+
+        static_state = search.StaticState(
+            objects=static_objects,
+            environments=environments,
+        )
 
         initial_state = search.PhysState(
             player=search.PlayerState(
@@ -963,10 +981,7 @@ class Hackceler8(gfx.Window):
                 jump_multiplier=player.jump_multiplier,
             ),
             settings=settings.physics_settings(),
-        )
-        static_state = search.StaticState(
-            objects=static_objects,
-            environments=enviroments,
+            state=static_state,
         )
         return settings, initial_state, static_state
 
@@ -1016,6 +1031,7 @@ class Hackceler8(gfx.Window):
                 jump_multiplier=player.jump_multiplier,
             ),
             settings=settings.physics_settings(),
+            state=static_state,
         )
 
         path = search.astar_search(
