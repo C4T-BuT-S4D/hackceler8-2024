@@ -42,8 +42,13 @@ elif [ "$1" = "standalone" ]; then
   certpath=""
   capath=""
   standalone="--standalone"
+elif [ "$1" = "prerender" ]; then
+  hostname=""
+  certpath=""
+  capath=""
+  standalone="--standalone --prerender"
 else
-  echo "Specify local/remote/standalone as first argument"
+  echo "Specify local/remote/standalone/prerender as first argument"
   exit 1
 fi
 

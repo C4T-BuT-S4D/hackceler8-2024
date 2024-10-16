@@ -63,7 +63,7 @@ class Hx8Client(venator_gui.Hackceler8):
                 raise SystemExit()
 
         constants.STANDALONE = self.argv.standalone
-        super().__init__(net=net, **kwargs)
+        super().__init__(net=net, is_prerender=self.argv.prerender, **kwargs)
 
     @classmethod
     def add_arguments(cls, parser: argparse.ArgumentParser):
@@ -96,6 +96,12 @@ class Hx8Client(venator_gui.Hackceler8):
             action='store_true',
             default=False,
             help='Run locally (without connecting to a dedicated server)',
+        )
+        parser.add_argument(
+            '--prerender',
+            action='store_true',
+            default=False,
+            help='Perform prerender of all maps and exit',
         )
 
 

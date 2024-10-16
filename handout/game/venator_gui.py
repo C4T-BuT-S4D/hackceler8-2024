@@ -27,7 +27,7 @@ from game.components.boss.bg import BossBG
 # cheats imports
 import time
 import secrets
-from cheats.settings import get_settings
+from cheats.settings import get_settings, update_settings
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
 import search
@@ -38,7 +38,7 @@ class Hackceler8(gfx.Window):
     window_size = (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
     title = SCREEN_TITLE
 
-    def __init__(self, net=None, **kwargs):
+    def __init__(self, net=None, is_prerender=False, **kwargs):
         super().__init__(**kwargs)
         self.heart = gfx.GuiImage.load(self, "resources/objects/heart.png")
         self.star = gfx.GuiImage.load(self, "resources/objects/star.png")
@@ -66,6 +66,7 @@ class Hackceler8(gfx.Window):
         self.last_save = 0
         self.recording_enabled = False
         self.screenshot_recordings = []
+        self.is_prerender = is_prerender
 
         # map item name to map name
         self.item_mapping: dict[str, str] = {}
@@ -244,6 +245,7 @@ class Hackceler8(gfx.Window):
 
     def render(self, time: float, frame_time: float):
         super().render(time, frame_time)
+
         if len(self.screenshot_recordings) > 0:
             import threading
             image = self.get_screenshot_image()
@@ -251,6 +253,13 @@ class Hackceler8(gfx.Window):
                 format = "jpeg"
                 path = self.screenshot_recordings.pop(0) + "." + format
                 threading.Thread(target=lambda: self.save_screenshot_image(image, path, format)).start()
+
+        # Perform prerender after game is setup and ready
+        if self.is_prerender and self.game and self.game.tics > 60:
+            self.is_prerender = False # Avoid infinite recursion
+            update_settings(lambda s: s.update(draw_names=True))
+            self.prerender_maps()
+            self.wnd.close()
 
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
@@ -545,7 +554,8 @@ class Hackceler8(gfx.Window):
                     logging.warning(f"skipped object {o.nametype}")
 
             if color:
-                if cheats_settings["draw_hitboxes"]:
+                # don't draw portal hitboxes, they are already outlined
+                if cheats_settings["draw_hitboxes"] and o.nametype != "Portal":
                     objs.append(gfx.lrtb_rectangle_outline(
                         o.x1,
                         o.x2,

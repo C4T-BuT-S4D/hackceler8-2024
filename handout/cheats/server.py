@@ -178,7 +178,7 @@ def run_cheats_server(port: int) -> threading.Thread:
             screenshot_name=screenshot_name,
         )
 
-    t = threading.Thread(target=lambda: app.run(host="localhost", port=port))
+    t = threading.Thread(target=lambda: app.run(host="localhost", port=port), daemon=True)
     t.start()
 
     return t
