@@ -19,7 +19,7 @@ impl StaticState {
         let mut other_objects = Vec::new();
         for (hitbox, t) in objects {
             match t {
-                ObjectType::Spike | ObjectType::Portal => {
+                ObjectType::Ouch | ObjectType::SpikeOuch | ObjectType::Portal | ObjectType::Warp => {
                     deadly.push(hitbox);
                 }
                 _ => {

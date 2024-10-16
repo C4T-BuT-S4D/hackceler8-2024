@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectType {
     Wall,
-    Spike,
+    Ouch,
+    SpikeOuch,
     Portal,
+    Warp,
 }

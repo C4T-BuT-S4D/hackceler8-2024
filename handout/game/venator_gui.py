@@ -880,21 +880,22 @@ class Hackceler8(gfx.Window):
             for o in self.game.objects + self.game.stateful_objects if o.nametype == "Wall"
         ]
 
-        # deadly_objects_type = {
-        #     "Spike": cheats_rust.ObjectType.Spike,
-        #     "Arena": cheats_rust.ObjectType.Arena,
-        #     "Portal": cheats_rust.ObjectType.Portal,
-        # }
-        # static_objects += [
-        #     (
-        #         cheats_geom.rect_to_rust_hitbox(
-        #             o.get_rect().expand(cheat_settings["extend_deadly_hitbox"])
-        #         ),
-        #         deadly_objects_type[o.nametype],
-        #     )
-        #     for o in self.game.objects + self.game.static_objs
-        #     if o.nametype in deadly_objects_type
-        # ]
+        deadly_objects_type = {
+            "Ouch": search.ObjectType.Ouch,
+            "SpikeOuch": search.ObjectType.SpikeOuch,
+            "Portal": search.ObjectType.Portal,
+            "warp": search.ObjectType.Warp,
+        }
+        static_objects += [
+            (
+                search.Hitbox(
+                    search.Rectangle(o.x1, o.x2, o.y1, o.y2),
+                ),
+                deadly_objects_type[o.nametype],
+            )
+            for o in self.game.objects + self.game.stateful_objects
+            if o.nametype in deadly_objects_type
+        ]
 
         enviroments = [
             # cheats_rust.EnvModifier(

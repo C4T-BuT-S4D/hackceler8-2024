@@ -54,6 +54,14 @@ impl PhysState {
         // Player is the only moving object we have.
         self.player.update_position();
         self.align_edges(state);
+
+        for deadly in &state.deadly {
+            if deadly.collides(&self.player.get_hitbox()) {
+                self.player.dead = true;
+                return;
+            }
+        }
+
         self.detect_env_mod(state);
 
         if self.player.in_the_air {
