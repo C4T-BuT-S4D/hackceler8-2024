@@ -469,6 +469,10 @@ class Hackceler8(gfx.Window):
             else:
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
 
+            if tick_to_apply.text_input is not None:
+                self.game.textbox.text_input.text = tick_to_apply.text_input
+                self.game.textbox.text_input.force_text = tick_to_apply.text_input
+
         # Automatic semi-sprinting and stamina management
         elif (player := self.game.player):
             walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())

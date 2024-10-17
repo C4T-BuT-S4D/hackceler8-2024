@@ -42,6 +42,7 @@ class TextObj:
         self.allow_input = allow_input
         self.left_padding = TEXT_X
         self.top_padding = 30
+        self.force_text = None
 
     def draw(self):
         scale = gfx.GLOBAL_WINDOW.scale
@@ -54,7 +55,10 @@ class TextObj:
                 imgui.push_style_color(imgui.COLOR_BORDER, *self.col)
                 imgui.push_style_var(imgui.STYLE_FRAME_BORDERSIZE, 2)
                 imgui.set_keyboard_focus_here()
-                _, self.text = imgui.input_text("", self.text)
+                if self.force_text is not None:
+                    self.text = self.force_text
+                else:
+                    _, self.text = imgui.input_text("", self.text)
                 imgui.pop_style_var()
                 imgui.pop_style_color()
                 imgui.pop_style_color()
