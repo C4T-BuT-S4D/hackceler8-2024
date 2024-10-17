@@ -244,21 +244,15 @@ class Hackceler8(gfx.Window):
                 return
             self.setup_game()
 
-<<<<<<< Updated upstream
         if self.map_overview_mode:
             self._tick_map_overview()
             return
 
-        if not self.single_tick_mode and not self.map_overview_mode:
-||||||| Stash base
-        if not self.single_tick_mode:
-=======
         if self.playing_recording and len(self.ticks_to_apply) == 0:
             self.single_tick_mode = True
             self.playing_recording = False
 
-        if not self.single_tick_mode:
->>>>>>> Stashed changes
+        if not self.single_tick_mode and not self.map_overview_mode:
             self.tick_once()
             if get_settings()["fast_replay"]:
                 while len(self.ticks_to_apply) > 0:
@@ -333,10 +327,12 @@ class Hackceler8(gfx.Window):
 
         if k == Keys.N and modifiers.ctrl:
             self.camera.set_scale(self.camera.scale + 1)
+            self._center_camera_to_player()
             return
         
         if k == Keys.M and modifiers.ctrl:
             self.camera.set_scale(self.camera.scale - 1)
+            self._center_camera_to_player()
             return
         
         if k == Keys.O and modifiers.ctrl:
@@ -566,6 +562,7 @@ class Hackceler8(gfx.Window):
             self.game.objects +
             self.game.stateful_objects +
             self.game.projectile_system.weapons +
+            self.game.physics_engine.env_tiles +
             [self.game.player]
         ):
             color = None
@@ -598,6 +595,9 @@ class Hackceler8(gfx.Window):
                     color = (255, 255, 0, 255)
                 case "Portal":
                     color = (0, 0, 255, 255)
+                case "Element":
+                    # olive green
+                    color = (107, 142, 35, 255)
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
@@ -638,12 +638,11 @@ class Hackceler8(gfx.Window):
                             (255, 255, 0, 255),
                             border_width=cheats_settings["object_hitbox"]
                         ))
-                    elif (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
-                        dist = modifier.min_distance
+                    elif (modifier := getattr(o, "modifier", None)) and (min_dist := getattr(modifier, "min_distance", None)) and min_dist > 0:
                         objs.append(gfx.circle_outline(
                             o.x,
                             o.y,
-                            dist,
+                            min_dist,
                             (255, 255, 0, 255),
                             border_width=cheats_settings["object_hitbox"]
                         ))
@@ -669,6 +668,8 @@ class Hackceler8(gfx.Window):
                         text += f" | {health:.02f}"
                     if o.nametype == "Enemy" and o.can_shoot:
                         text += f" | st={o.shoot_timer}"
+                    if o.nametype == "Element":
+                        text += f" | js={o.modifier.jump_speed} g={o.modifier.gravity} ws={o.modifier.walk_speed} jo={o.modifier.jump_override}"
 
                     x = (o.x1 - self.camera.position.x) / self.camera.scale
                     y = (self.camera.position.y - o.y2) / self.camera.scale - self.debug_labels_font_size * 2
