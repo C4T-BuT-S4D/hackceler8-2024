@@ -581,20 +581,26 @@ class Hackceler8(gfx.Window):
                     color = (255, 0, 0, 255)
                 case "Ouch":
                     color = (255, 255, 0, 255)
+                case "Portal":
+                    color = (0, 0, 255, 255)
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
             if color:
-                # don't draw portal hitboxes, they are already outlined
-                if cheats_settings["draw_hitboxes"] and o.nametype != "Portal":
-                    objs.append(gfx.lrtb_rectangle_outline(
-                        o.x1,
-                        o.x2,
-                        o.y2,
-                        o.y1,
-                        color,
-                        border=cheats_settings["object_hitbox"],
-                    ))
+                if cheats_settings["draw_hitboxes"]:
+                    # don't draw portal hitboxes, they are already outlined
+                    if o.nametype != "Portal":
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            o.x1,
+                            o.x2,
+                            o.y2,
+                            o.y1,
+                            color,
+                            border=cheats_settings["object_hitbox"],
+                        ))
+                    else:
+                        # draw line to o.dest
+                        objs.append(gfx.line(o.x, o.y, o.dest.x, o.dest.y, color))
 
                     # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
                     if o.nametype == "Enemy" and o.can_melee:
