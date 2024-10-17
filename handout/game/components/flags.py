@@ -22,7 +22,8 @@ from game.map.tileset import read_str
 
 
 class Flag:
-    def __init__(self, name, stars):
+    def __init__(self, fullname, name, stars):
+        self.fullname = fullname
         self.name = name
         self.stars = stars
         self.collected_time = 0
@@ -129,10 +130,10 @@ def load_match_flags():
                                 stars_needed = val
                         # Freeable NPCs
                         if name.startswith("trapped_") and name.endswith("_npc"):
-                            flags.append(Flag(name.removeprefix("trapped_").removesuffix("_npc"), stars))
+                            flags.append(Flag(name, name.removeprefix("trapped_").removesuffix("_npc"), stars))
                         # Bosses
                         if name.endswith("_boss_gate"):
                             name = name
-                            flags.append(Flag(name.removesuffix("_gate"), 9999))
+                            flags.append(Flag(name, name.removesuffix("_gate"), 9999))
                             stars_for_boss = min(stars_for_boss, stars_needed)
     return Flags(flags, stars_for_boss)

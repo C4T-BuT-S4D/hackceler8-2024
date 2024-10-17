@@ -8,6 +8,7 @@ from copy import deepcopy
 from flask import Flask, request, redirect, url_for, render_template, send_from_directory
 
 from cheats.settings import get_settings, update_settings, settings_forms
+from cheats.state import get_state
 
 def run_cheats_server(port: int) -> threading.Thread:
     app = Flask(__name__)
@@ -27,9 +28,15 @@ def run_cheats_server(port: int) -> threading.Thread:
         return send_from_directory(
             os.path.join(os.path.dirname(__file__), "recordings"), path
         )
+    
+    @app.route("/overview", methods=["GET"])
+    def overview():
+        state = get_state()
+        return render_template("overview.html", state=state)
+
 
     @app.route("/", methods=["GET", "POST"])
-    def index():
+    def settings():
         settings = get_settings()
 
         forms = [
@@ -47,9 +54,9 @@ def run_cheats_server(port: int) -> threading.Thread:
             logging.info(f"Updating cheat settings: {data}")
 
             update_settings(lambda s: s.update(**data))
-            return redirect(url_for("index"))
+            return redirect(url_for("settings"))
 
-        return render_template("index.html", forms=forms)
+        return render_template("settings.html", forms=forms)
 
     @app.route("/macros", methods=["GET", "POST"])
     def macros():

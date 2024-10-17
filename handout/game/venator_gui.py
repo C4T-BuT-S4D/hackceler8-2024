@@ -27,7 +27,9 @@ from game.components.boss.bg import BossBG
 # cheats imports
 import time
 import secrets
+from copy import deepcopy
 from cheats.settings import get_settings, update_settings
+from cheats.state import get_state, update_state, State
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
 import search
@@ -89,6 +91,7 @@ class Hackceler8(gfx.Window):
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
 
+        self._save_overview_state()
         self._build_item_mapping()
 
     # Do not resize anything. This way the regular camera will scale, and gui is drawn separately anyway.
@@ -333,15 +336,17 @@ class Hackceler8(gfx.Window):
             return
 
         if k == Keys.N and modifiers.ctrl:
+            center = self.camera.center()
             self.camera.set_scale(self.camera.scale + 1)
             if not self.map_overview_mode:
-                self._center_camera_to_player()
+                self.camera.center_on(center[0], center[1])
             return
         
         if k == Keys.M and modifiers.ctrl:
+            center = self.camera.center()
             self.camera.set_scale(self.camera.scale - 1)
             if not self.map_overview_mode:
-                self._center_camera_to_player()
+                self.camera.center_on(center[0], center[1])
             return
         
         if k == Keys.O and modifiers.ctrl:
@@ -918,6 +923,9 @@ class Hackceler8(gfx.Window):
                 if obj.nametype == "Item":
                     self.item_mapping[obj.name] = map_name
                     self.item_locations[obj.name] = (obj.x, obj.y)
+    
+    def _save_overview_state(self):
+        update_state(lambda s: deepcopy(State(flags=self.game.match_flags)))
 
     def _build_item_paths(self):
         if self.paths_built_for == self.game.current_map:
