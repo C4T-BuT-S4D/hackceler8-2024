@@ -8,9 +8,9 @@
   <span>
     <button disabled class="button px-2 py-1">👀 Show</button>
     {% if item.tracking %}
-    <button class="button px-2 py-1" style="background-color: rgb(255, 198, 198);" onclick="track_object('{{ item.mapname }}','{{ item.obj.nametype }}','{{ item.obj.name or item.obj.map_name }}')">⛔️ Untrack</button>
+    <button class="button px-2 py-1" style="background-color: rgb(255, 198, 198);" onclick="trackObject('{{ item.mapname }}','{{ item.obj.nametype }}','{{ item.obj.name or item.obj.map_name }}')">⛔️ Untrack</button>
     {% else %}
-    <button class="button px-2 py-1" onclick="track_object('{{ item.mapname }}','{{ item.obj.nametype }}','{{ item.obj.name or item.obj.map_name }}')">🎯 Track</button>
+    <button class="button px-2 py-1" onclick="trackObject('{{ item.mapname }}','{{ item.obj.nametype }}','{{ item.obj.name or item.obj.map_name }}')">🎯 Track</button>
     {% endif %}
   </span>
 </div>
@@ -97,8 +97,27 @@
   {% endif %}
 </div>
 
+<div class="container">
+  <h1 class="title is-2 text-light" style="text-align: center;">Maps</h1>
+  <div class="tabs is-centered">
+    <ul>
+      <li class="is-active"><a style="color: var(--theme); border-color: var(--theme);" onclick="changeMap(this)" class="subtitle" data-mapname="base">Base</a></li>
+      <li><a style="color: var(--foreground);" onclick="changeMap(this)" class="subtitle" data-mapname="beach">Beach</a></li>
+      <li><a style="color: var(--foreground);" onclick="changeMap(this)" class="subtitle" data-mapname="ocean">Ocean</a></li>
+      <li><a style="color: var(--foreground);" onclick="changeMap(this)" class="subtitle" data-mapname="cloud">Cloud</a></li>
+      <li><a style="color: var(--foreground);" onclick="changeMap(this)" class="subtitle" data-mapname="ruins">Ruins</a></li>
+    </ul>
+  </div>
+  <div class="is-flex is-justify-content-center">
+    <img id="mapimg" style="width: 100%; height: auto;"/>
+  </div>
+</div>
+
 <script>
-  function track_object(mapname, objnametype, objname) {
+  let selectedMap = "base";
+  let selectedMapElement = document.querySelector(".tabs ul li.is-active a");
+
+  function trackObject(mapname, objnametype, objname) {
     fetch(`/track`, { 
       method: "POST",
       headers: {
@@ -113,5 +132,24 @@
       window.location.reload();
     });
   }
+
+  function changeMap(e) {
+    selectedMapElement.style = "";
+    selectedMapElement.style.color = "var(--foreground)";
+    selectedMapElement.parentElement.classList.remove("is-active");
+
+    e.style = "";
+    e.style.color = "var(--theme)";
+    e.style.borderColor = "var(--theme)";
+    e.parentElement.classList.add("is-active");
+
+    selectedMapElement = e;
+    selectedMap = e.dataset.mapname;
+    window.mapimg.src = `/maps/${selectedMap}.jpeg`;
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    window.mapimg.src = `/maps/${selectedMap}.jpeg`;
+  });
 </script>
 {% endblock %}

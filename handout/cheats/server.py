@@ -29,6 +29,12 @@ def run_cheats_server(port: int) -> threading.Thread:
             os.path.join(os.path.dirname(__file__), "recordings"), path
         )
     
+    @app.get("/maps/<path:path>")
+    def maps_static(path="."):
+        return send_from_directory(
+            os.path.join(os.path.dirname(__file__), "../screenshots/prerender"), path
+        )
+
     @app.route("/", methods=["GET"])
     def overview():
         state = get_state()
