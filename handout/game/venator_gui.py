@@ -71,6 +71,7 @@ class Hackceler8(gfx.Window):
         self.screenshot_recordings = []
         self.is_prerender = is_prerender
         self.playing_recording = False
+        self.auto_shoot = False
 
         # map item name to map name
         self.object_map_mapping: dict[str, str] = {}
@@ -347,6 +348,11 @@ class Hackceler8(gfx.Window):
             self.camera.center_on(center[0], center[1])
             return
         
+        if k == Keys.J and modifiers.ctrl:
+            self.auto_shoot = not self.auto_shoot
+            logging.info(f"auto shoot: {self.auto_shoot}")
+            return
+
         if k == Keys.M and modifiers.ctrl:
             center = self.camera.center()
             self.camera.set_scale(self.camera.scale - 1)
@@ -484,6 +490,14 @@ class Hackceler8(gfx.Window):
             if cheats_settings["semirun_100"]:
                 if player.stamina == 100:
                     self.game.raw_pressed_keys.add(Keys.LSHIFT)
+            if self.auto_shoot and not Keys.SPACE in self.game.prev_pressed_keys:
+                need_shoot = False
+                for weap in player.weapons:
+                    if weap.equipped and weap.cool_down_timer == 0:
+                        need_shoot = True
+                        break
+                if need_shoot:
+                    self.game.raw_pressed_keys.add(Keys.SPACE)
 
         if self.recording_enabled and time.time() - self.last_save > cheats_settings["auto_recording_interval"]:
             self.save_recording(suffix='auto')
