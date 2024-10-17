@@ -362,6 +362,9 @@ class Hackceler8(gfx.Window):
         
         cancel_applying_ticks_on_key_pressed = True # TODO: get from settings
 
+        if self.game == None:
+            return
+
         if k:
             self.game.raw_pressed_keys.add(k)
             if cancel_applying_ticks_on_key_pressed:
@@ -414,7 +417,7 @@ class Hackceler8(gfx.Window):
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
 
         # Automatic semi-sprinting and stamina management
-        if (player := self.game.player):
+        elif (player := self.game.player):
             walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
             if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
                 self.game.raw_pressed_keys.discard(Keys.LSHIFT)

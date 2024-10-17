@@ -45,7 +45,7 @@ impl Move {
     }
 
     pub fn is_only_vertical(&self) -> bool {
-        *self == Move::S || *self == Move::W
+        *self == Move::NONE || *self == Move::S || *self == Move::W
     }
 
     pub fn is_left(&self) -> bool {

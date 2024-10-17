@@ -13,6 +13,7 @@ use moves::{Direction, Move};
 use objects::ObjectType;
 use physics::{get_transition, PhysState};
 use player::PlayerState;
+use rround::init_thresholds;
 use settings::{GameMode, PhysicsSettings, SearchSettings};
 
 use crate::astar::astar_search;
@@ -33,6 +34,7 @@ pub mod static_state;
 
 #[pymodule]
 fn search(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    init_thresholds();
     m.add_class::<Pointf>()?;
     m.add_class::<Hitbox>()?;
     m.add_class::<PlayerState>()?;

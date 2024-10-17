@@ -134,8 +134,9 @@ pub fn astar_search(
         }
 
         println!(
-            "processed {iter:?} iterations, to_process: {:} elems",
-            to_process.len()
+            "processed {iter:?} iterations, to_process: {:} elems, open set {:}",
+            to_process.len(),
+            open_set.len()
         );
 
         let next_states: Vec<_> = to_process
@@ -150,13 +151,22 @@ pub fn astar_search(
                 let mut next_states = Vec::new();
 
                 for &next_move in &allowed_moves {
-                    for &shift_pressed in shift_variants.iter() {
+                    for &(mut shift_pressed) in shift_variants.iter() {
                         if next_move.is_up() && state.was_step_up_before {
                             continue;
                         }
 
-                        if !settings.always_shift && shift_pressed && next_move.is_only_vertical() {
-                            continue;
+                        if settings.mode == GameMode::Platformer
+                            && shift_pressed
+                            && next_move.is_only_vertical()
+                        {
+                            // such moves are inferior to the same move with no shift
+                            // this has to override always_shift
+                            if settings.always_shift {
+                                shift_pressed = false;
+                            } else {
+                                continue; // no-shift option already considered in other iteration
+                            }
                         }
 
                         let mut neighbor_state = *state;

@@ -1,8 +1,13 @@
 use std::{env::args, path::PathBuf};
 
-use search::{astar::astar_search, encoding::{deserialize_settings, deserialize_state, deserialize_static_state}};
+use rround::init_thresholds;
+use search::{
+    astar::astar_search,
+    encoding::{deserialize_settings, deserialize_state, deserialize_static_state},
+};
 
 fn main() {
+    init_thresholds();
     let base_dir = PathBuf::from(args().nth(1).unwrap());
     let settings_path = base_dir.join("settings.json");
     let initial_state_path = base_dir.join("initial_state.json");
@@ -19,7 +24,8 @@ fn main() {
     let target_state = deserialize_state(&target_state_str);
     let static_state = deserialize_static_state(&static_state_str);
 
-    settings.timeout = 10000;
+    //settings.timeout = 10000;
+    settings.timeout = 5;
     settings.state_batch_size = 16384;
     settings.always_shift = true;
     settings.simple_geometry = true;
