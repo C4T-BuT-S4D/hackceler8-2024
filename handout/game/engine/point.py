@@ -20,3 +20,6 @@ class Point:
         self.x = x
         self.y = y
         self.npa = np.array([self.x, self.y])
+
+    def __repr__(self):
+        return f'Point({self.x}, {self.y})'

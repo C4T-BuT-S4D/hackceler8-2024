@@ -646,6 +646,8 @@ class Hackceler8(gfx.Window):
                         text += f" | {name}"
                     if (health := getattr(o, "health", None)) and o.nametype not in {"warp"}:
                         text += f" | {health:.02f}"
+                    if o.nametype == "Enemy" and o.can_shoot:
+                        text += f" | st={o.shoot_timer}"
 
                     x = (o.x1 - self.camera.position.x) / self.camera.scale
                     y = (self.camera.position.y - o.y2) / self.camera.scale - self.debug_labels_font_size * 2
@@ -950,7 +952,14 @@ class Hackceler8(gfx.Window):
                 ),
                 search.ObjectType.Wall,
             )
-            for o in self.game.objects + self.game.stateful_objects if o.nametype == "Wall"
+            for o in (
+                self.game.objects + 
+                self.game.stateful_objects
+            )
+            if (
+                o.nametype == "Wall" or 
+                (o.nametype == "Enemy" and o.name == "block_enemy" and not o.dead)
+            )
         ]
 
         deadly_objects_type = {
