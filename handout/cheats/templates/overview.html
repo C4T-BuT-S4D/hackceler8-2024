@@ -1,22 +1,26 @@
 {% import "wtf.jinja" as wtf %} {% extends "base.html" %} {% block content %}
 
-{% set map_styles = ({"base":"color: black", "beach":"color: teal", "ocean":"color: blue", "cloud":"color: #00BFFF", "ruins":"color: brown"})	%}
+{% set map_styles = ({"base":"color: purple", "beach":"color: teal", "ocean":"color: blue", "cloud":"color: #00BFFF", "ruins":"color: brown"})	%}
 
-<div class="grid is-col-min-12">
+{% macro item_header(item) %}
+<div class="is-flex is-justify-content-space-between is-align-items-center">
+  <span style="{{ map_styles[item.mapname] or '#262124' }}">{{ item.mapname }}</span>
+  <span>
+    <button disabled class="button px-2 py-1">👀 Show</button>
+    <button disabled class="button px-2 py-1">🎯 Trace</button>
+  </span>
+</div>
+{%- endmacro %}
+
+<div class="grid is-col-min-12" style="grid-template-rows: masonry;">
   {% if state %}
-  <div class="cell box is-dark theme-colors-light">
-    <h1 class="subtitle">Flags</h1>
+  <div class="cell box is-dark theme-colors-light is-align-self-baseline">
+    <h1 class="title is-5">Flags</h1>
     <div class="content">
     {% for flag in state.flags %}
-      <div class="is-flex is-justify-content-space-between is-align-items-center">
-        <span style="{{ map_styles[flag.mapname] or '#262124' }}">{{ flag.mapname }}</span>
-        <span>
-          <button disabled class="button px-2 py-1">👀 Show</button>
-          <button disabled class="button px-2 py-1">🎯 Trace</button>
-        </span>
-      </div>
+      {{ item_header(flag) }}
       <p class="mt-2" style="text-align: center;">
-        {{ flag.obj.name }}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span>
+        <span class="title is-6">{{ flag.obj.name }}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span></span>
       </p>
       {% if not loop.last %}
       <hr class="theme-colors"/>
@@ -24,17 +28,11 @@
     {% endfor %}
     </div>
   </div>
-  <div class="cell box is-dark theme-colors-light">
-    <h1 class="subtitle">Coins</h1>
+  <div class="cell box is-dark theme-colors-light is-align-self-baseline">
+    <h1 class="title is-5">Coins</h1>
     {% for coin in state.coins %}
     <div>
-      <div class="is-flex is-justify-content-space-between is-align-items-center">
-        <span style="{{ map_styles[coin.mapname] or '#262124' }}">{{ coin.mapname }}</span>
-        <span>
-          <button disabled class="button px-2 py-1">👀 Show</button>
-          <button disabled class="button px-2 py-1">🎯 Trace</button>
-        </span>
-      </div>
+      {{ item_header(coin) }}
       <p class="mt-2" style="text-align: center;">
         <span class="title is-6">{{ coin.obj.display_name }} 💵 {{ coin.obj.name }}</span>
       </p>
@@ -44,29 +42,48 @@
     {% endif %}
     {% endfor %}
   </div>
-  <div class="cell">Cell 2</div>
-  <div class="cell">Cell 3</div>
-  <div class="cell">Cell 4</div>
-  <div class="cell">Cell 5</div>
-  <div class="cell">Cell 6</div>
-  <div class="cell">Cell 7</div>
-  <div class="cell">Cell 8</div>
-  <div class="cell">Cell 9</div>
-  <div class="cell">Cell 10</div>
-  <div class="cell">Cell 11</div>
-  <div class="cell">Cell 12</div>
-  <div class="cell">Cell 13</div>
-  <div class="cell">Cell 14</div>
-  <div class="cell">Cell 15</div>
-  <div class="cell">Cell 16</div>
-  <div class="cell">Cell 17</div>
-  <div class="cell">Cell 18</div>
-  <div class="cell">Cell 19</div>
-  <div class="cell">Cell 20</div>
-  <div class="cell">Cell 21</div>
-  <div class="cell">Cell 22</div>
-  <div class="cell">Cell 23</div>
-  <div class="cell">Cell 24</div>
+  <div class="cell box is-dark theme-colors-light is-align-self-baseline">
+    <h1 class="title is-5">NPCs</h1>
+    {% for npc in state.npcs %}
+    <div>
+      {{ item_header(npc) }}
+      <p class="mt-2" style="text-align: center;">
+        <span class="title is-6">{{ npc.obj.name }}</span>
+      </p>
+    </div>
+    {% if not loop.last %}
+    <hr class="theme-colors my-2"/>
+    {% endif %}
+    {% endfor %}
+  </div>
+  <div class="cell box is-dark theme-colors-light is-align-self-baseline">
+    <h1 class="title is-5">Items</h1>
+    {% for item in state.items %}
+    <div>
+      {{ item_header(item) }}
+      <p class="mt-2" style="text-align: center;">
+        <span class="title is-6">{{ item.obj.name }}</span>
+      </p>
+    </div>
+    {% if not loop.last %}
+    <hr class="theme-colors my-2"/>
+    {% endif %}
+    {% endfor %}
+  </div>
+  <div class="cell box is-dark theme-colors-light is-align-self-baseline">
+    <h1 class="title is-5">Warps</h1>
+    {% for warp in state.warps %}
+    <div>
+      {{ item_header(warp) }}
+      <p class="mt-2" style="text-align: center;">
+        <span class="title is-6">🌀 warp to {% if warp.mapname == "base" %}<span style="{{ map_styles[warp.obj.map_name] or '#262124' }}">{{ warp.obj.map_name }}</span>{% else %}<span style="{{ map_styles['base'] or '#262124' }}">base</span>{% endif %}</span>
+      </p>
+    </div>
+    {% if not loop.last %}
+    <hr class="theme-colors my-2"/>
+    {% endif %}
+    {% endfor %}
+  </div>
   {% else %}
   <section class="section">
     <div class="container">

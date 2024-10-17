@@ -20,6 +20,9 @@ class MapFlag:
 class State:
     flags: list[MapFlag] = None
     coins: list[MapObject] = None
+    npcs: list[MapObject] = None
+    items: list[MapObject] = None
+    warps: list[MapObject] = None
 
 __lock: RLock = RLock()
 __state: Optional[State] = None

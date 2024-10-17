@@ -4,11 +4,10 @@ use hashbrown::HashSet;
 
 use crate::{
     static_state::StaticState,
-    astar::{allowed_actions, transitions, apply_transition},
+    astar::{transitions, apply_transition},
     moves::{Action, Move},
-    physics::{PhysState, PLAYER_JUMP_SPEED, PLAYER_MOVEMENT_SPEED},
-    player::PlayerState,
-    settings::{GameMode, SearchSettings},
+    physics::PhysState,
+    settings::SearchSettings,
 };
 
 const MAXDEPTH : usize = 25usize;
