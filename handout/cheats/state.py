@@ -9,15 +9,18 @@ from game.engine.generics import GenericObject
 class MapObject:
     mapname: str
     obj: GenericObject
+    tracking: bool = False
 
 @dataclass
 class MapFlag:
     mapname: str
     obj: GenericObject
     stars: int
+    tracking: bool = False
 
 @dataclass
 class State:
+    allobjs: list[MapObject] = None
     flags: list[MapFlag] = None
     coins: list[MapObject] = None
     npcs: list[MapObject] = None

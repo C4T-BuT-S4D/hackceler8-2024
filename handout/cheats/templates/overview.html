@@ -7,7 +7,11 @@
   <span style="{{ map_styles[item.mapname] or '#262124' }}">{{ item.mapname }}</span>
   <span>
     <button disabled class="button px-2 py-1">👀 Show</button>
-    <button disabled class="button px-2 py-1">🎯 Trace</button>
+    {% if item.tracking %}
+    <button class="button px-2 py-1" style="background-color: rgb(255, 198, 198);" onclick="track_object('{{ item.mapname }}','{{ item.obj.nametype }}','{{ item.obj.name or item.obj.map_name }}')">⛔️ Untrack</button>
+    {% else %}
+    <button class="button px-2 py-1" onclick="track_object('{{ item.mapname }}','{{ item.obj.nametype }}','{{ item.obj.name or item.obj.map_name }}')">🎯 Track</button>
+    {% endif %}
   </span>
 </div>
 {%- endmacro %}
@@ -92,4 +96,22 @@
   </section>
   {% endif %}
 </div>
+
+<script>
+  function track_object(mapname, objnametype, objname) {
+    fetch(`/track`, { 
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        mapname: mapname,
+        objnametype: objnametype,
+        objname: objname,
+      }),
+    }).then(() => {
+      window.location.reload();
+    });
+  }
+</script>
 {% endblock %}

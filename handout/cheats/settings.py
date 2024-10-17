@@ -46,7 +46,7 @@ class ExtraSettings(Form):
     )
 
     fast_replay = BooleanField(
-        default=False,
+        default=True,
         label="Fast replay",
         description="Fast replay",
     )
@@ -153,6 +153,7 @@ class SettingsDict(TypedDict):
     macros: list[Macro]
     cancel_applying_ticks_on_key_pressed: bool
     fast_replay: bool
+    exact_track_objects: set[str]
 
 
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]
@@ -161,6 +162,7 @@ __lock: RLock = RLock()
 __settings: SettingsDict = {
     "recording_filename": None,
     "macros": [Macro(name=f"Macro {i + 1}", keys="") for i in range(9)],
+    "exact_track_objects": set() # Enabled via overview
 }
 
 
@@ -187,6 +189,6 @@ def get_settings() -> SettingsDict:
         return deepcopy(__settings)
 
 
-def update_settings(upd: Callable[[dict], None]):
+def update_settings(upd: Callable[[SettingsDict], None]):
     with __lock:
         upd(__settings)

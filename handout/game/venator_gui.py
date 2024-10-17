@@ -740,8 +740,11 @@ class Hackceler8(gfx.Window):
                     if o.nametype == "Item":
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
 
-        if cheats_settings["track_objects"]:
-            tracked_objects = list(map(lambda x: x.strip().lower(), cheats_settings["track_objects"].split(",")))
+        if cheats_settings["track_objects"] or len(cheats_settings["exact_track_objects"]) > 0:
+            tracked_objects = list(filter(lambda x: len(x) > 0, map(lambda x: x.strip().lower(), cheats_settings["track_objects"].split(","))))
+            tracked_objects.extend(cheats_settings["exact_track_objects"])
+            tracked_objects = set(tracked_objects)
+
             for obj_key, obj in self.object_links:
                 if not any(obj_key.endswith(tracked_obj) for tracked_obj in tracked_objects):
                     continue
@@ -987,8 +990,9 @@ class Hackceler8(gfx.Window):
         npcs.sort(key=lambda x: x.mapname)
         items.sort(key=lambda x: x.mapname)
         warps.sort(key=lambda x: x.mapname)
+        allobjs = flags + coins + npcs + items + warps
 
-        update_state(lambda s: deepcopy(State(flags=flags, coins=coins, npcs=npcs, items=items, warps=warps)))
+        update_state(lambda s: deepcopy(State(allobjs=allobjs, flags=flags, coins=coins, npcs=npcs, items=items, warps=warps)))
 
     def _build_object_map_mapping(self):
         self.object_map_mapping = {}
@@ -1006,7 +1010,7 @@ class Hackceler8(gfx.Window):
                     "Enemy",
                     "warp",
                 }:
-                    obj_key = f'{map_name}_{obj.nametype}_{obj.name}'.lower()
+                    obj_key = f'{map_name}_{obj.nametype}_{obj.name}'.lower() if obj.nametype != "warp" else f'{map_name}_warp_{obj.map_name}'.lower()
                     self.object_map_mapping[obj_key] = map_name
                     self.object_links.append((obj_key, obj))
 

@@ -8,7 +8,7 @@ from copy import deepcopy
 from flask import Flask, request, redirect, url_for, render_template, send_from_directory
 
 from cheats.settings import get_settings, update_settings, settings_forms
-from cheats.state import get_state
+from cheats.state import get_state, update_state, State
 
 def run_cheats_server(port: int) -> threading.Thread:
     app = Flask(__name__)
@@ -29,13 +29,48 @@ def run_cheats_server(port: int) -> threading.Thread:
             os.path.join(os.path.dirname(__file__), "recordings"), path
         )
     
-    @app.route("/overview", methods=["GET"])
+    @app.route("/", methods=["GET"])
     def overview():
         state = get_state()
         return render_template("overview.html", state=state)
+    
+    @app.route("/track", methods=["POST"])
+    def track():
+        mapname = request.form.get("mapname")
+        objnametype = request.form.get("objnametype")
+        objname = request.form.get("objname")
+
+        state = get_state()
+        if state is None:
+            return redirect(url_for("overview"))
+        
+        track_name = f"{mapname}_{objnametype}_{objname}".lower()
+        do_track = True
+
+        # atomically set tracking to true for the object
+        def update(s: State):
+            for obj in s.allobjs:
+                if str(obj.mapname) == mapname and str(obj.obj.nametype) == objnametype and (str(obj.obj.name) == objname or (obj.obj.nametype == "warp" and str(obj.obj.map_name) == objname)):
+                    obj.tracking = not obj.tracking
+                    if obj.tracking:
+                        logging.info(f"Tracking {track_name}")
+                    else:
+                        nonlocal do_track
+                        do_track = False
+                        logging.info(f"Stopped tracking {track_name}")
+                    break
+            return s
+        update_state(update)
+
+        if do_track:
+            update_settings(lambda s: s["exact_track_objects"].add(track_name))
+        else:
+            update_settings(lambda s: s["exact_track_objects"].remove(track_name))
+
+        return redirect(url_for("overview"))
 
 
-    @app.route("/", methods=["GET", "POST"])
+    @app.route("/settings", methods=["GET", "POST"])
     def settings():
         settings = get_settings()
 
