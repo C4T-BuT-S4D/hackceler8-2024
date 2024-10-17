@@ -24,7 +24,7 @@
     {% for flag in state.flags %}
       {{ item_header(flag) }}
       <p class="mt-2" style="text-align: center;">
-        <span class="title is-6">{{ flag.obj.name }}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span></span>
+        <span class="title is-6">{{ flag.obj.name }}{% if flag.obj.nametype == "BossGate" %} needs <span style="white-space: nowrap;">{{ flag.obj.stars_needed }} ⭐</span>{% endif %}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span></span>
       </p>
       {% if not loop.last %}
       <hr class="theme-colors"/>

@@ -716,8 +716,13 @@ class Hackceler8(gfx.Window):
 
                 if cheats_settings["draw_names"] and o.nametype not in {"Wall"}:
                     text = f"{o.nametype}"
+
+                    # type-specific info
                     if o.nametype == "warp":
                         text += f" to {o.map_name}"
+                    elif o.nametype == "BossGate":
+                        text += f" for {o.stars_needed} stars"
+
                     if name := getattr(o, "name", None):
                         text += f" | {name}"
                     if (health := getattr(o, "health", None)) and o.nametype not in {
@@ -1008,6 +1013,7 @@ class Hackceler8(gfx.Window):
                     "Item",
                     "NPC",
                     "Enemy",
+                    "BossGate",
                     "warp",
                 }:
                     obj_key = f'{map_name}_{obj.nametype}_{obj.name}'.lower() if obj.nametype != "warp" else f'{map_name}_warp_{obj.map_name}'.lower()
