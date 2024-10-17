@@ -67,6 +67,7 @@ class Hackceler8(gfx.Window):
         self.recording_enabled = False
         self.screenshot_recordings = []
         self.is_prerender = is_prerender
+        self.playing_recording = False
 
         # map item name to map name
         self.item_mapping: dict[str, str] = {}
@@ -243,12 +244,25 @@ class Hackceler8(gfx.Window):
                 return
             self.setup_game()
 
+<<<<<<< Updated upstream
         if self.map_overview_mode:
             self._tick_map_overview()
             return
 
         if not self.single_tick_mode and not self.map_overview_mode:
+||||||| Stash base
+        if not self.single_tick_mode:
+=======
+        if self.playing_recording and len(self.ticks_to_apply) == 0:
+            self.single_tick_mode = True
+            self.playing_recording = False
+
+        if not self.single_tick_mode:
+>>>>>>> Stashed changes
             self.tick_once()
+            if get_settings()["fast_replay"]:
+                while len(self.ticks_to_apply) > 0:
+                    self.tick_once()
 
     def render(self, time: float, frame_time: float):
         super().render(time, frame_time)
@@ -377,7 +391,7 @@ class Hackceler8(gfx.Window):
             self.prerender_maps()
             return
         
-        cancel_applying_ticks_on_key_pressed = True # TODO: get from settings
+        cancel_applying_ticks_on_key_pressed = get_settings()["cancel_applying_ticks_on_key_pressed"]
 
         if self.game == None:
             return
@@ -391,6 +405,7 @@ class Hackceler8(gfx.Window):
             self.game.raw_pressed_keys.add(k)
             if cancel_applying_ticks_on_key_pressed:
                 self.ticks_to_apply = []
+                self.playing_recording = False
 
     def on_key_release(self, symbol: int, _modifiers: int):
         if self.game is None:
@@ -839,10 +854,8 @@ class Hackceler8(gfx.Window):
                 force_keys=True,
             )
             for tick in data
-        ] + [TickData(
-            keys=[Keys.P],
-            force_keys=True,
-        )]
+        ]
+        self.playing_recording = True
 
     def save_recording(self, current_map: str | None = None, suffix: str = ''):
         import json
@@ -1132,6 +1145,7 @@ class Hackceler8(gfx.Window):
 
         else:
             self.ticks_to_apply = []
+            self.playing_recording = False
             for move, shift, state in path:
                 match move:
                     case search.Move.W:
