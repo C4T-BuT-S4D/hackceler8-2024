@@ -1,0 +1,46 @@
+{% import "wtf.jinja" as wtf %} {% extends "base.html" %} {% block content %}
+<div class="grid is-col-min-12">
+  {% if state %}
+  <div class="cell box is-dark theme-colors-light">
+    <h1 class="subtitle">Flags</h1>
+    <div class="content">
+    {% for flag in state.flags.flags %}
+      <p style="margin: 0;">{{ flag.fullname }}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span></p>
+      {% if not loop.last %}
+      <hr class="theme-colors"/>
+      {% endif %}
+    {% endfor %}
+    </div>
+  </div>
+  <div class="cell">Cell 2</div>
+  <div class="cell">Cell 3</div>
+  <div class="cell">Cell 4</div>
+  <div class="cell">Cell 5</div>
+  <div class="cell">Cell 6</div>
+  <div class="cell">Cell 7</div>
+  <div class="cell">Cell 8</div>
+  <div class="cell">Cell 9</div>
+  <div class="cell">Cell 10</div>
+  <div class="cell">Cell 11</div>
+  <div class="cell">Cell 12</div>
+  <div class="cell">Cell 13</div>
+  <div class="cell">Cell 14</div>
+  <div class="cell">Cell 15</div>
+  <div class="cell">Cell 16</div>
+  <div class="cell">Cell 17</div>
+  <div class="cell">Cell 18</div>
+  <div class="cell">Cell 19</div>
+  <div class="cell">Cell 20</div>
+  <div class="cell">Cell 21</div>
+  <div class="cell">Cell 22</div>
+  <div class="cell">Cell 23</div>
+  <div class="cell">Cell 24</div>
+  {% else %}
+  <section class="section">
+    <div class="container">
+      <h1 class="title has-text-warning">No game state available, wait a bit</h1>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

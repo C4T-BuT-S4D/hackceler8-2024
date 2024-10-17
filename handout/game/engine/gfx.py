@@ -199,7 +199,7 @@ class Window(mglw.WindowConfig):
         # make sure the scale is proportional, so later we can only use one dimension
         x_scale = mglw.window().viewport_width / constants.SCREEN_WIDTH
         y_scale = mglw.window().viewport_height / constants.SCREEN_HEIGHT
-        assert abs(x_scale - y_scale) < 0.01, (x_scale, y_scale)
+        # assert abs(x_scale - y_scale) < 0.01, (x_scale, y_scale)
         self.imgui_io.font_global_scale = x_scale
         self.scale = x_scale
         self.imgui.resize(width, height)
@@ -262,6 +262,13 @@ class Camera:
         self.viewport_height = self.h * scale
         self.projection_matrix = Matrix44.orthogonal_projection(0, self.viewport_width, 0, self.viewport_height, -1, 1)
 
+    def center(self):
+        return self.position.x + self.viewport_width / 2, self.position.y + self.viewport_height / 2
+
+    def center_on(self, x, y):
+        self.position.x = x - self.viewport_width / 2
+        self.position.y = y - self.viewport_height / 2
+        self.update()
 
 def _get_shader_source(name: str):
     path = os.path.join(os.path.dirname(__file__), "shaders", name)

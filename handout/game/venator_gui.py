@@ -27,9 +27,12 @@ from game.components.boss.bg import BossBG
 # cheats imports
 import time
 import secrets
+from copy import deepcopy
 from cheats.settings import get_settings, update_settings
+from cheats.state import get_state, update_state, State
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
+from game.engine.generics import GenericObject
 import search
 
 SCREEN_TITLE = "Hackceler8-24"
@@ -67,24 +70,37 @@ class Hackceler8(gfx.Window):
         self.recording_enabled = False
         self.screenshot_recordings = []
         self.is_prerender = is_prerender
+        self.playing_recording = False
+        self.auto_shoot = False
 
         # map item name to map name
-        self.item_mapping: dict[str, str] = {}
+        self.object_map_mapping: dict[str, str] = {}
         self.map_connections: dict[str, list[str]] = {}
         self.map_warps: dict[(str, str), (int, int)] = {}
-        self.item_locations: dict[str, (int, int)] = {}
+        self.object_links: list[tuple[str, GenericObject]] = []
 
         self.paths_built_for: Optional[str] = None
-        self.item_paths: dict[str, list[str]] = {}
+        self.object_paths: dict[str, list[str]] = {}
+
+        self.map_overview_mode = False
+        self.map_overview_keys_pressed: set[Keys] = set()
+
+        self.debug_objects: dict[str, list[gfx.ShapeDrawParams]] = {}
+
+        self.projected_width = 0
+        self.projected_height = 0
 
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
 
-        self._build_item_mapping()
+        self._save_overview_state()
+        self._build_object_map_mapping()
 
     # Do not resize anything. This way the regular camera will scale, and gui is drawn separately anyway.
     def on_resize(self, width, height):
-        pass
+        logging.info(f'on resize {width=} {height=}')
+        self.projected_width = width
+        self.projected_height = height
 
     def _center_camera_to_player(self):
         if not self.game.ready or not self.game.map_loaded:
@@ -240,8 +256,19 @@ class Hackceler8(gfx.Window):
                 return
             self.setup_game()
 
-        if not self.single_tick_mode:
+        if self.map_overview_mode:
+            self._tick_map_overview()
+            return
+
+        if self.playing_recording and len(self.ticks_to_apply) == 0:
+            self.single_tick_mode = True
+            self.playing_recording = False
+
+        if not self.single_tick_mode and not self.map_overview_mode:
             self.tick_once()
+            if get_settings()["fast_replay"]:
+                while len(self.ticks_to_apply) > 0:
+                    self.tick_once()
 
     def render(self, time: float, frame_time: float):
         super().render(time, frame_time)
@@ -295,27 +322,51 @@ class Hackceler8(gfx.Window):
             macro_ticks = []
             for macro_tick in macro:
                 tick_keys = set()
-                if not isinstance(macro_tick, str):
-                    logging.error(f'bad macro (not str) "{macro_tick}"')
+                text_input = None
+                if isinstance(macro_tick, str):
+                    for key in macro_tick:
+                        key_v = Keys.from_serialized(key)
+                        if not key_v:
+                            logging.error(f'bad macro (not key) "{key}"')
+                            return
+                        tick_keys.add(key_v)
+                elif isinstance(macro_tick, dict):
+                    tick_keys = set(macro_tick.get("keys", []))
+                    text_input = macro_tick.get("text_input")
+                else:
+                    logging.error(f'bad macro (not str or dict) "{macro_tick}"')
                     return
-                for key in macro_tick:
-                    key_v = Keys.from_serialized(key)
-                    if not key_v:
-                        logging.error(f'bad macro (not key) "{key}"')
-                        return
-                    tick_keys.add(key_v)
-                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False))
+                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False, text_input=text_input))
 
             logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)
             return
 
         if k == Keys.N and modifiers.ctrl:
+            center = self.camera.center()
             self.camera.set_scale(self.camera.scale + 1)
+            self.camera.center_on(center[0], center[1])
             return
         
+        if k == Keys.J and modifiers.ctrl:
+            self.auto_shoot = not self.auto_shoot
+            logging.info(f"auto shoot: {self.auto_shoot}")
+            return
+
         if k == Keys.M and modifiers.ctrl:
+            center = self.camera.center()
             self.camera.set_scale(self.camera.scale - 1)
+            self.camera.center_on(center[0], center[1])
+            return
+        
+        if k == Keys.O and modifiers.ctrl:
+            self.map_overview_mode = not self.map_overview_mode
+            logging.info(f"map overview mode: {self.map_overview_mode}")
+
+            if not self.map_overview_mode:
+                self.map_overview_keys_pressed.clear()
+                self._center_camera_to_player()
+
             return
         
         if k == Keys.EQUAL:
@@ -360,20 +411,32 @@ class Hackceler8(gfx.Window):
             self.prerender_maps()
             return
         
-        cancel_applying_ticks_on_key_pressed = True # TODO: get from settings
+        cancel_applying_ticks_on_key_pressed = get_settings()["cancel_applying_ticks_on_key_pressed"]
 
         if self.game == None:
+            return
+
+        if self.map_overview_mode:
+            if k in {Keys.W, Keys.A, Keys.S, Keys.D}:
+                self.map_overview_keys_pressed.add(k)
             return
 
         if k:
             self.game.raw_pressed_keys.add(k)
             if cancel_applying_ticks_on_key_pressed:
                 self.ticks_to_apply = []
+                self.playing_recording = False
 
     def on_key_release(self, symbol: int, _modifiers: int):
         if self.game is None:
             return
+
         k = Keys.from_ui(symbol)
+
+        if self.map_overview_mode:
+            self.map_overview_keys_pressed.discard(k)
+            return
+
         if k in self.game.raw_pressed_keys:
             self.game.raw_pressed_keys.remove(k)
 
@@ -401,7 +464,6 @@ class Hackceler8(gfx.Window):
             return self.boss_bg.white_text()
         return self.game.current_map != "cloud"
 
-
     # Cheats added functions
 
     def tick_once(self):
@@ -416,6 +478,10 @@ class Hackceler8(gfx.Window):
             else:
                 self.game.raw_pressed_keys |= set(k for k in tick_to_apply.keys)
 
+            if tick_to_apply.text_input is not None:
+                self.game.textbox.text_input.text = tick_to_apply.text_input
+                self.game.textbox.text_input.force_text = tick_to_apply.text_input
+
         # Automatic semi-sprinting and stamina management
         elif (player := self.game.player):
             walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
@@ -424,6 +490,14 @@ class Hackceler8(gfx.Window):
             if cheats_settings["semirun_100"]:
                 if player.stamina == 100:
                     self.game.raw_pressed_keys.add(Keys.LSHIFT)
+            if self.auto_shoot and not Keys.SPACE in self.game.prev_pressed_keys:
+                need_shoot = False
+                for weap in player.weapons:
+                    if weap.equipped and weap.cool_down_timer == 0:
+                        need_shoot = True
+                        break
+                if need_shoot:
+                    self.game.raw_pressed_keys.add(Keys.SPACE)
 
         if self.recording_enabled and time.time() - self.last_save > cheats_settings["auto_recording_interval"]:
             self.save_recording(suffix='auto')
@@ -523,7 +597,7 @@ class Hackceler8(gfx.Window):
 
     def _draw_debug_ui(self, cheats_settings: dict):
         # Build item paths for the current map.
-        self._build_item_paths()
+        self._build_object_paths()
 
         objs = []
 
@@ -531,6 +605,7 @@ class Hackceler8(gfx.Window):
             self.game.objects +
             self.game.stateful_objects +
             self.game.projectile_system.weapons +
+            self.game.physics_engine.env_tiles +
             [self.game.player]
         ):
             color = None
@@ -561,20 +636,29 @@ class Hackceler8(gfx.Window):
                     color = (255, 0, 0, 255)
                 case "Ouch":
                     color = (255, 255, 0, 255)
+                case "Portal":
+                    color = (0, 0, 255, 255)
+                case "Element":
+                    # olive green
+                    color = (107, 142, 35, 255)
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
             if color:
-                # don't draw portal hitboxes, they are already outlined
-                if cheats_settings["draw_hitboxes"] and o.nametype != "Portal":
-                    objs.append(gfx.lrtb_rectangle_outline(
-                        o.x1,
-                        o.x2,
-                        o.y2,
-                        o.y1,
-                        color,
-                        border=cheats_settings["object_hitbox"],
-                    ))
+                if cheats_settings["draw_hitboxes"]:
+                    # don't draw portal hitboxes, they are already outlined
+                    if o.nametype != "Portal":
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            o.x1,
+                            o.x2,
+                            o.y2,
+                            o.y1,
+                            color,
+                            border=cheats_settings["object_hitbox"],
+                        ))
+                    else:
+                        # draw line to o.dest
+                        objs.append(gfx.line(o.x, o.y, o.dest.x, o.dest.y, color))
 
                     # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
                     if o.nametype == "Enemy" and o.can_melee:
@@ -597,12 +681,11 @@ class Hackceler8(gfx.Window):
                             (255, 255, 0, 255),
                             border_width=cheats_settings["object_hitbox"]
                         ))
-                    elif (modifier := getattr(o, "modifier", None)) and modifier.min_distance > 0:
-                        dist = modifier.min_distance
+                    elif (modifier := getattr(o, "modifier", None)) and (min_dist := getattr(modifier, "min_distance", None)) and min_dist > 0:
                         objs.append(gfx.circle_outline(
                             o.x,
                             o.y,
-                            dist,
+                            min_dist,
                             (255, 255, 0, 255),
                             border_width=cheats_settings["object_hitbox"]
                         ))
@@ -626,6 +709,10 @@ class Hackceler8(gfx.Window):
                         text += f" | {name}"
                     if (health := getattr(o, "health", None)) and o.nametype not in {"warp"}:
                         text += f" | {health:.02f}"
+                    if o.nametype == "Enemy" and o.can_shoot:
+                        text += f" | st={o.shoot_timer}"
+                    if o.nametype == "Element":
+                        text += f" | js={o.modifier.jump_speed} g={o.modifier.gravity} ws={o.modifier.walk_speed} jo={o.modifier.jump_override}"
 
                     x = (o.x1 - self.camera.position.x) / self.camera.scale
                     y = (self.camera.position.y - o.y2) / self.camera.scale - self.debug_labels_font_size * 2
@@ -638,25 +725,40 @@ class Hackceler8(gfx.Window):
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
 
         if cheats_settings["track_objects"]:
-            tracked_objects = list(map(lambda x: x.strip(), cheats_settings["track_objects"].split(",")))
-            for item_name, map_name in self.item_mapping.items():
-                if item_name in tracked_objects:
-                    if map_name == self.game.current_map:
-                        x, y = self.item_locations[item_name]
+            tracked_objects = list(map(lambda x: x.strip().lower(), cheats_settings["track_objects"].split(",")))
+            for obj_key, obj in self.object_links:
+                if not any(obj_key.endswith(tracked_obj) for tracked_obj in tracked_objects):
+                    continue
+                map_name = self.object_map_mapping[obj_key]
+                if map_name == self.game.current_map:
+                    objs.append(gfx.line(self.game.player.x, self.game.player.y, obj.x, obj.y, color))
+                elif self.game.current_map in self.object_paths[obj_key]:
+                    cur_idx = self.object_paths[obj_key].index(self.game.current_map)
+                    next_map_name = self.object_paths[obj_key][cur_idx + 1]
+                    if (map_name, next_map_name) in self.map_warps:
+                        x, y = self.map_warps[(self.game.current_map, next_map_name)]
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
-                    elif self.game.current_map in self.item_paths[item_name]:
-                        cur_idx = self.item_paths[item_name].index(self.game.current_map)
-                        next_map_name = self.item_paths[item_name][cur_idx + 1]
-                        if (map_name, next_map_name) in self.map_warps:
-                            x, y = self.map_warps[(self.game.current_map, next_map_name)]
-                            objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
 
         if self.recording_enabled:
             pos = list(self.camera.position)
             objs.append(gfx.circle_filled(int(pos[0]) + 650, int(pos[1]) + 120, 30, (255, 0, 0, 255)))
 
+        objs.extend(self.debug_objects.values())
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
+
+    def _tick_map_overview(self):
+        if not self.map_overview_keys_pressed:
+            return
+
+        if Keys.W in self.map_overview_keys_pressed:
+            self.camera.position.y += 10
+        if Keys.A in self.map_overview_keys_pressed:
+            self.camera.position.x -= 10
+        if Keys.S in self.map_overview_keys_pressed:
+            self.camera.position.y -= 10
+        if Keys.D in self.map_overview_keys_pressed:
+            self.camera.position.x += 10
 
     def full_screenshot(self, dir="./screenshots", format="jpeg", name: str = None):
         # Precalc the "interesting" area to be displayed in the screenshot
@@ -762,7 +864,6 @@ class Hackceler8(gfx.Window):
             os.makedirs(os.path.dirname(path))
         image.save(path, format)
         
-
     def prerender_maps(self):
         for map in self.game.maps_dict:
             self.game.load_map(map)
@@ -798,10 +899,8 @@ class Hackceler8(gfx.Window):
                 force_keys=True,
             )
             for tick in data
-        ] + [TickData(
-            keys=[Keys.P],
-            force_keys=True,
-        )]
+        ]
+        self.playing_recording = True
 
     def save_recording(self, current_map: str | None = None, suffix: str = ''):
         import json
@@ -840,8 +939,11 @@ class Hackceler8(gfx.Window):
     def _reset_recording(self):
         self.game.current_recording = []
 
-    def _build_item_mapping(self):
-        self.item_mapping = {}
+    def _save_overview_state(self):
+        update_state(lambda s: deepcopy(State(flags=self.game.match_flags)))
+
+    def _build_object_map_mapping(self):
+        self.object_map_mapping = {}
 
         # map -> list of connected maps
         for map_name, map_attrs in self.game.maps_dict.items():
@@ -850,17 +952,23 @@ class Hackceler8(gfx.Window):
                 if obj.nametype == "warp":
                     self.map_connections[map_name].add(obj.map_name)
                     self.map_warps[(map_name, obj.map_name)] = (obj.x, obj.y)
-                if obj.nametype == "Item":
-                    self.item_mapping[obj.name] = map_name
-                    self.item_locations[obj.name] = (obj.x, obj.y)
+                if obj.nametype in {
+                    "Item",
+                    "NPC",
+                    "Enemy",
+                    "warp",
+                }:
+                    obj_key = f'{map_name}_{obj.nametype}_{obj.name}'.lower()
+                    self.object_map_mapping[obj_key] = map_name
+                    self.object_links.append((obj_key, obj))
 
-    def _build_item_paths(self):
+    def _build_object_paths(self):
         if self.paths_built_for == self.game.current_map:
             return
         
         if self.game.current_map is None:
             self.paths_built_for = None
-            self.item_paths = {}
+            self.object_paths = {}
             return
 
         # bfs
@@ -876,14 +984,14 @@ class Hackceler8(gfx.Window):
         
         print('bfs done', prev)
 
-        for item_name, map_name in self.item_mapping.items():
+        for obj_key, map_name in self.object_map_mapping.items():
             path = [map_name]
             while map_name := prev.get(map_name, None):
                 path.append(map_name)
             path.reverse()
-            self.item_paths[item_name] = path
+            self.object_paths[obj_key] = path
 
-        print('item paths', self.item_paths)
+        print('object paths', self.object_paths)
 
         self.paths_built_for = self.game.current_map
 
@@ -918,7 +1026,14 @@ class Hackceler8(gfx.Window):
                 search.ObjectType.Wall,
                 zero_point
             )
-            for o in self.game.objects + self.game.stateful_objects if o.nametype == "Wall"
+            for o in (
+                self.game.objects + 
+                self.game.stateful_objects
+            )
+            if (
+                o.nametype == "Wall" or 
+                (o.nametype == "Enemy" and o.name == "block_enemy" and not o.dead)
+            )
         ]
 
         deadly_objects_type = {
@@ -1034,19 +1149,55 @@ class Hackceler8(gfx.Window):
         
         if self.game is None:
             return
+
+        border_x = (self.projected_width - self.wnd.viewport_width) / 2
+        border_y = (self.projected_height - self.wnd.viewport_height) / 2
+
+        x_ratio = (x * self.wnd.pixel_ratio - border_x) / self.wnd.viewport_width
+        y_ratio = (y * self.wnd.pixel_ratio - border_y) / self.wnd.viewport_height
+
+        projected_x = x * self.wnd.pixel_ratio
+        projected_y = y * self.wnd.pixel_ratio
+
+        logging.info("mouse pressed at (%s, %s), projected: (%s, %s), border: (%s, %s)", 
+                     x, y, 
+                     projected_x, projected_y, 
+                     border_x, border_y)
+
+        if projected_x < border_x or projected_x > self.projected_width - border_x:
+            logging.warn(
+                "click is outside of projected area (X): projected(%s, %s), border(%s, %s)", 
+                projected_x, projected_y, 
+                border_x, border_y,
+            )
+            return
+
+        if projected_y < border_y or projected_y > self.projected_height - border_y:
+            logging.warn(
+                "click is outside of projected area (Y): projected(%s, %s), border(%s, %s)", 
+                projected_x, projected_y, 
+                border_x, border_y,
+            )
+            return
+
+        target_x = x_ratio * self.camera.viewport_width + self.camera.position.x
+        target_y = (self.camera.viewport_height - y_ratio * self.camera.viewport_height) + self.camera.position.y
+
         player = self.game.player
-
-        target_x = x * self.camera.scale + self.camera.position.x
-        target_y = (constants.SCREEN_HEIGHT - y) * self.camera.scale + self.camera.position.y
-
         logging.info(
-            "mouse pressed at (%s, %s), player pos: (%s, %s), target: (%s, %s)",
+            "mouse pressed at (%s, %s), player pos: (%s, %s), target: (%s, %s), projected: (%s, %s), window: (%s, %s), viewport: (%s, %s)",
             x,
             y,
             player.x,
             player.y,
             target_x,
             target_y,
+            self.projected_width,
+            self.projected_height,
+            self.wnd.width,
+            self.wnd.height,
+            self.wnd.viewport_width,
+            self.wnd.viewport_height,
         )
 
         settings, initial_state, static_state = self._dump_rust_state(enable_portals=True, enable_proj=False)
@@ -1104,6 +1255,7 @@ class Hackceler8(gfx.Window):
 
         else:
             self.ticks_to_apply = []
+            self.playing_recording = False
             for move, shift, state in path:
 
                 self.ticks_to_apply.append(

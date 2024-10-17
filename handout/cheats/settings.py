@@ -39,6 +39,18 @@ class ExtraSettings(Form):
         description="Interval between auto recordings in seconds",
     )
 
+    cancel_applying_ticks_on_key_pressed = BooleanField(
+        default=True,
+        label="Cancel applying ticks on key pressed",
+        description="Cancel applying ticks on key pressed",
+    )
+
+    fast_replay = BooleanField(
+        default=True,
+        label="Fast replay",
+        description="Fast replay",
+    )
+
 class RenderingSettings(Form):
     title = "Rendering"
 
@@ -139,6 +151,8 @@ class SettingsDict(TypedDict):
     state_batch_size: int
     recording_filename: str
     macros: list[Macro]
+    cancel_applying_ticks_on_key_pressed: bool
+    fast_replay: bool
 
 
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]
