@@ -65,6 +65,7 @@ class Hackceler8(gfx.Window):
         self.debug_labels_font_size = 8 # modified for full-size screenshots
         self.ticks_to_apply: list[TickData] = []
         self.draws: list[float] = []
+        self.tick_times: list[float] = []
         self.single_tick_mode = False
         self.last_save = 0
         self.recording_enabled = False
@@ -213,6 +214,10 @@ class Hackceler8(gfx.Window):
         if len(self.draws) > 1:
             gfx.draw_txt("fps", gfx.FONT_PIXEL[30], "F %.02f" % (len(self.draws) / (self.draws[-1] - self.draws[0])),
                         10, 40)
+        
+        if len(self.tick_times) > 1:
+            gfx.draw_txt("tps", gfx.FONT_PIXEL[30], "T %.02f" % (len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])),
+                        10, 70)
 
         if self.game.cheating_detected:
             txt = "   OUT OF SYNC\nCHEATING DETECTED"
@@ -467,6 +472,7 @@ class Hackceler8(gfx.Window):
     # Cheats added functions
 
     def tick_once(self):
+        self._record_tick()
         cheats_settings = get_settings()
 
         keys_to_restore = self.game.raw_pressed_keys.copy()
@@ -594,6 +600,11 @@ class Hackceler8(gfx.Window):
         self.draws.append(now)
         while self.draws and now - self.draws[0] > 3:
             self.draws.pop(0)
+
+    def _record_tick(self):
+        self.tick_times.append(time.time())
+        while self.tick_times and self.tick_times[0] < time.time() - 1:
+            self.tick_times.pop(0)
 
     def _draw_debug_ui(self, cheats_settings: dict):
         # Build item paths for the current map.
