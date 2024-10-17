@@ -32,6 +32,7 @@ from cheats.settings import get_settings, update_settings
 from cheats.state import get_state, update_state, State
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
+from game.engine.generics import GenericObject
 import search
 
 SCREEN_TITLE = "Hackceler8-24"
@@ -72,13 +73,13 @@ class Hackceler8(gfx.Window):
         self.playing_recording = False
 
         # map item name to map name
-        self.item_mapping: dict[str, str] = {}
+        self.object_map_mapping: dict[str, str] = {}
         self.map_connections: dict[str, list[str]] = {}
         self.map_warps: dict[(str, str), (int, int)] = {}
-        self.item_locations: dict[str, (int, int)] = {}
+        self.object_links: list[tuple[str, GenericObject]] = []
 
         self.paths_built_for: Optional[str] = None
-        self.item_paths: dict[str, list[str]] = {}
+        self.object_paths: dict[str, list[str]] = {}
 
         self.map_overview_mode = False
         self.map_overview_keys_pressed: set[Keys] = set()
@@ -92,7 +93,7 @@ class Hackceler8(gfx.Window):
         self.game = Venator(self.net, is_server=False)
 
         self._save_overview_state()
-        self._build_item_mapping()
+        self._build_object_map_mapping()
 
     # Do not resize anything. This way the regular camera will scale, and gui is drawn separately anyway.
     def on_resize(self, width, height):
@@ -457,7 +458,6 @@ class Hackceler8(gfx.Window):
             return self.boss_bg.white_text()
         return self.game.current_map != "cloud"
 
-
     # Cheats added functions
 
     def tick_once(self):
@@ -575,7 +575,7 @@ class Hackceler8(gfx.Window):
 
     def _draw_debug_ui(self, cheats_settings: dict):
         # Build item paths for the current map.
-        self._build_item_paths()
+        self._build_object_paths()
 
         objs = []
 
@@ -703,18 +703,19 @@ class Hackceler8(gfx.Window):
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
 
         if cheats_settings["track_objects"]:
-            tracked_objects = list(map(lambda x: x.strip(), cheats_settings["track_objects"].split(",")))
-            for item_name, map_name in self.item_mapping.items():
-                if item_name in tracked_objects:
-                    if map_name == self.game.current_map:
-                        x, y = self.item_locations[item_name]
+            tracked_objects = list(map(lambda x: x.strip().lower(), cheats_settings["track_objects"].split(",")))
+            for obj_key, obj in self.object_links:
+                if not any(obj_key.endswith(tracked_obj) for tracked_obj in tracked_objects):
+                    continue
+                map_name = self.object_map_mapping[obj_key]
+                if map_name == self.game.current_map:
+                    objs.append(gfx.line(self.game.player.x, self.game.player.y, obj.x, obj.y, color))
+                elif self.game.current_map in self.object_paths[obj_key]:
+                    cur_idx = self.object_paths[obj_key].index(self.game.current_map)
+                    next_map_name = self.object_paths[obj_key][cur_idx + 1]
+                    if (map_name, next_map_name) in self.map_warps:
+                        x, y = self.map_warps[(self.game.current_map, next_map_name)]
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
-                    elif self.game.current_map in self.item_paths[item_name]:
-                        cur_idx = self.item_paths[item_name].index(self.game.current_map)
-                        next_map_name = self.item_paths[item_name][cur_idx + 1]
-                        if (map_name, next_map_name) in self.map_warps:
-                            x, y = self.map_warps[(self.game.current_map, next_map_name)]
-                            objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
 
         if self.recording_enabled:
             pos = list(self.camera.position)
@@ -916,8 +917,11 @@ class Hackceler8(gfx.Window):
     def _reset_recording(self):
         self.game.current_recording = []
 
-    def _build_item_mapping(self):
-        self.item_mapping = {}
+    def _save_overview_state(self):
+        update_state(lambda s: deepcopy(State(flags=self.game.match_flags)))
+
+    def _build_object_map_mapping(self):
+        self.object_map_mapping = {}
 
         # map -> list of connected maps
         for map_name, map_attrs in self.game.maps_dict.items():
@@ -926,20 +930,23 @@ class Hackceler8(gfx.Window):
                 if obj.nametype == "warp":
                     self.map_connections[map_name].add(obj.map_name)
                     self.map_warps[(map_name, obj.map_name)] = (obj.x, obj.y)
-                if obj.nametype == "Item":
-                    self.item_mapping[obj.name] = map_name
-                    self.item_locations[obj.name] = (obj.x, obj.y)
-    
-    def _save_overview_state(self):
-        update_state(lambda s: deepcopy(State(flags=self.game.match_flags)))
+                if obj.nametype in {
+                    "Item",
+                    "NPC",
+                    "Enemy",
+                    "warp",
+                }:
+                    obj_key = f'{map_name}_{obj.nametype}_{obj.name}'.lower()
+                    self.object_map_mapping[obj_key] = map_name
+                    self.object_links.append((obj_key, obj))
 
-    def _build_item_paths(self):
+    def _build_object_paths(self):
         if self.paths_built_for == self.game.current_map:
             return
         
         if self.game.current_map is None:
             self.paths_built_for = None
-            self.item_paths = {}
+            self.object_paths = {}
             return
 
         # bfs
@@ -955,14 +962,14 @@ class Hackceler8(gfx.Window):
         
         print('bfs done', prev)
 
-        for item_name, map_name in self.item_mapping.items():
+        for obj_key, map_name in self.object_map_mapping.items():
             path = [map_name]
             while map_name := prev.get(map_name, None):
                 path.append(map_name)
             path.reverse()
-            self.item_paths[item_name] = path
+            self.object_paths[obj_key] = path
 
-        print('item paths', self.item_paths)
+        print('object paths', self.object_paths)
 
         self.paths_built_for = self.game.current_map
 
