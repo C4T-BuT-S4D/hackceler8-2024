@@ -81,6 +81,11 @@ class Hackceler8(gfx.Window):
         self.map_overview_mode = False
         self.map_overview_keys_pressed: set[Keys] = set()
 
+        self.debug_objects: dict[str, list[gfx.ShapeDrawParams]] = {}
+
+        self.projected_width = 0
+        self.projected_height = 0
+
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
 
@@ -88,7 +93,9 @@ class Hackceler8(gfx.Window):
 
     # Do not resize anything. This way the regular camera will scale, and gui is drawn separately anyway.
     def on_resize(self, width, height):
-        pass
+        logging.info(f'on resize {width=} {height=}')
+        self.projected_width = width
+        self.projected_height = height
 
     def _center_camera_to_player(self):
         if not self.game.ready or not self.game.map_loaded:
@@ -701,6 +708,7 @@ class Hackceler8(gfx.Window):
             pos = list(self.camera.position)
             objs.append(gfx.circle_filled(int(pos[0]) + 650, int(pos[1]) + 120, 30, (255, 0, 0, 255)))
 
+        objs.extend(self.debug_objects.values())
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
 
@@ -1078,19 +1086,55 @@ class Hackceler8(gfx.Window):
         
         if self.game is None:
             return
+
+        border_x = (self.projected_width - self.wnd.viewport_width) / 2
+        border_y = (self.projected_height - self.wnd.viewport_height) / 2
+
+        x_ratio = (x * self.wnd.pixel_ratio - border_x) / self.wnd.viewport_width
+        y_ratio = (y * self.wnd.pixel_ratio - border_y) / self.wnd.viewport_height
+
+        projected_x = x * self.wnd.pixel_ratio
+        projected_y = y * self.wnd.pixel_ratio
+
+        logging.info("mouse pressed at (%s, %s), projected: (%s, %s), border: (%s, %s)", 
+                     x, y, 
+                     projected_x, projected_y, 
+                     border_x, border_y)
+
+        if projected_x < border_x or projected_x > self.projected_width - border_x:
+            logging.warn(
+                "click is outside of projected area (X): projected(%s, %s), border(%s, %s)", 
+                projected_x, projected_y, 
+                border_x, border_y,
+            )
+            return
+
+        if projected_y < border_y or projected_y > self.projected_height - border_y:
+            logging.warn(
+                "click is outside of projected area (Y): projected(%s, %s), border(%s, %s)", 
+                projected_x, projected_y, 
+                border_x, border_y,
+            )
+            return
+
+        target_x = x_ratio * self.camera.viewport_width + self.camera.position.x
+        target_y = (self.camera.viewport_height - y_ratio * self.camera.viewport_height) + self.camera.position.y
+
         player = self.game.player
-
-        target_x = x * self.camera.scale + self.camera.position.x
-        target_y = (constants.SCREEN_HEIGHT - y) * self.camera.scale + self.camera.position.y
-
         logging.info(
-            "mouse pressed at (%s, %s), player pos: (%s, %s), target: (%s, %s)",
+            "mouse pressed at (%s, %s), player pos: (%s, %s), target: (%s, %s), projected: (%s, %s), window: (%s, %s), viewport: (%s, %s)",
             x,
             y,
             player.x,
             player.y,
             target_x,
             target_y,
+            self.projected_width,
+            self.projected_height,
+            self.wnd.width,
+            self.wnd.height,
+            self.wnd.viewport_width,
+            self.wnd.viewport_height,
         )
 
         settings, initial_state, static_state = self._dump_rust_state()

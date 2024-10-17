@@ -199,7 +199,7 @@ class Window(mglw.WindowConfig):
         # make sure the scale is proportional, so later we can only use one dimension
         x_scale = mglw.window().viewport_width / constants.SCREEN_WIDTH
         y_scale = mglw.window().viewport_height / constants.SCREEN_HEIGHT
-        assert abs(x_scale - y_scale) < 0.01, (x_scale, y_scale)
+        # assert abs(x_scale - y_scale) < 0.01, (x_scale, y_scale)
         self.imgui_io.font_global_scale = x_scale
         self.scale = x_scale
         self.imgui.resize(width, height)
@@ -254,8 +254,8 @@ class Camera:
         self.ubo.bind_to_uniform_block(0)
         self.ubo.write((self.view_matrix * self.projection_matrix).astype("f4"))
 
-    def set_scale(self, scale: int):
-        if scale == self.scale or scale < 1:
+    def set_scale(self, scale: int, force: bool = False):
+        if (scale == self.scale or scale < 1) and not force:
             return
         self.scale = scale
         self.viewport_width = self.w * scale
