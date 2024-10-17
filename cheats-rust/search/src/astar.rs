@@ -130,7 +130,7 @@ pub fn transitions<'a>(
                 let mut neighbor_state = *state;
                 neighbor_state.tick(act, static_state, settings);
                 (act, neighbor_state)
-        }).filter(|(act, st)| !st.player.dead)
+        }).filter(|(_act, st)| !st.player.dead)
 }
 
 #[pyfunction]
@@ -152,14 +152,6 @@ pub fn astar_search(
     ));
     g_score.insert(initial_state, 0);
 
-    //let shift_variants = if settings.always_shift {
-    //    vec![true]
-    //} else if settings.disable_shift {
-    //    vec![false]
-    //} else {
-    //    vec![false, true]
-    //};
-    //let allowed_moves = Move::all(&settings);
     let acts = allowed_actions(&settings);
 
     let start = SystemTime::now();

@@ -470,7 +470,9 @@ class Hackceler8(gfx.Window):
         cheats_settings = get_settings()
 
         keys_to_restore = self.game.raw_pressed_keys.copy()
+        forced_tick = False
         if self.ticks_to_apply:
+            forced_tick = True
             tick_to_apply = self.ticks_to_apply.pop(0)
 
             if tick_to_apply.force_keys:
@@ -483,7 +485,7 @@ class Hackceler8(gfx.Window):
                 self.game.textbox.text_input.force_text = tick_to_apply.text_input
 
         # Automatic semi-sprinting and stamina management
-        elif (player := self.game.player):
+        if (player := self.game.player) and not forced_tick:
             walk_keys = {Keys.A, Keys.D} | ({Keys.W, Keys.S} if player.scroller_mode else set())
             if player.stamina == 0 or not self.game.raw_pressed_keys & walk_keys:
                 self.game.raw_pressed_keys.discard(Keys.LSHIFT)
@@ -543,7 +545,7 @@ class Hackceler8(gfx.Window):
                     settings, static_state, state, move, shift
                 )
             # DODGES
-            if cheats_settings['dodge'] and move is not None:
+            if cheats_settings['dodge'] and move is not None and not forced_tick:
                 ret = search.dodge_search(settings, state, static_state, move, shift)
                 if ret != (move, shift):
                     print('DODGE VIA', (move, shift), 'TO', ret)
