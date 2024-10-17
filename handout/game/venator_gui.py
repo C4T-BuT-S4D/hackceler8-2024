@@ -949,14 +949,33 @@ class Hackceler8(gfx.Window):
 
         flags: list[MapFlag] = []
         coins: list[MapObject] = []
+        npcs: list[MapObject] = []
+        items: list[MapObject] = []
+        warps: list[MapObject] = []
+
         for map_name, map_attrs in self.game.maps_dict.items():
             for o in map_attrs.tiled_map.objects:
-                if o.name and o.name.startswith("coin_"):
-                    coins.append(MapObject(map_name, o))
-                if o.name and o.name in flagdict:
-                    flags.append(MapFlag(map_name, o, flagdict[o.name]))
+                if o.nametype == "warp":
+                    warps.append(MapObject(map_name, o))
 
-        update_state(lambda s: deepcopy(State(flags=flags, coins=coins)))
+                if not o.name:
+                    continue
+                if o.name.startswith("coin_"):
+                    coins.append(MapObject(map_name, o))
+                elif o.name in flagdict:
+                    flags.append(MapFlag(map_name, o, flagdict[o.name]))
+                elif o.nametype == "NPC":
+                    npcs.append(MapObject(map_name, o))
+                elif o.nametype == "Item":
+                    items.append(MapObject(map_name, o))
+
+        flags.sort(key=lambda x: x.mapname)
+        coins.sort(key=lambda x: x.mapname)
+        npcs.sort(key=lambda x: x.mapname)
+        items.sort(key=lambda x: x.mapname)
+        warps.sort(key=lambda x: x.mapname)
+
+        update_state(lambda s: deepcopy(State(flags=flags, coins=coins, npcs=npcs, items=items, warps=warps)))
 
     def _build_object_map_mapping(self):
         self.object_map_mapping = {}
