@@ -327,12 +327,14 @@ class Hackceler8(gfx.Window):
 
         if k == Keys.N and modifiers.ctrl:
             self.camera.set_scale(self.camera.scale + 1)
-            self._center_camera_to_player()
+            if not self.map_overview_mode:
+                self._center_camera_to_player()
             return
         
         if k == Keys.M and modifiers.ctrl:
             self.camera.set_scale(self.camera.scale - 1)
-            self._center_camera_to_player()
+            if not self.map_overview_mode:
+                self._center_camera_to_player()
             return
         
         if k == Keys.O and modifiers.ctrl:
