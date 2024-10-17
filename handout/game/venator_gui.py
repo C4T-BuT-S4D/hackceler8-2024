@@ -343,15 +343,13 @@ class Hackceler8(gfx.Window):
         if k == Keys.N and modifiers.ctrl:
             center = self.camera.center()
             self.camera.set_scale(self.camera.scale + 1)
-            if not self.map_overview_mode:
-                self.camera.center_on(center[0], center[1])
+            self.camera.center_on(center[0], center[1])
             return
         
         if k == Keys.M and modifiers.ctrl:
             center = self.camera.center()
             self.camera.set_scale(self.camera.scale - 1)
-            if not self.map_overview_mode:
-                self.camera.center_on(center[0], center[1])
+            self.camera.center_on(center[0], center[1])
             return
         
         if k == Keys.O and modifiers.ctrl:
@@ -843,7 +841,6 @@ class Hackceler8(gfx.Window):
             os.makedirs(os.path.dirname(path))
         image.save(path, format)
         
-
     def prerender_maps(self):
         for map in self.game.maps_dict:
             self.game.load_map(map)

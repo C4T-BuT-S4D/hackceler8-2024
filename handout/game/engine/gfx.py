@@ -254,8 +254,8 @@ class Camera:
         self.ubo.bind_to_uniform_block(0)
         self.ubo.write((self.view_matrix * self.projection_matrix).astype("f4"))
 
-    def set_scale(self, scale: int, force: bool = False):
-        if (scale == self.scale or scale < 1) and not force:
+    def set_scale(self, scale: int):
+        if scale == self.scale or scale < 1:
             return
         self.scale = scale
         self.viewport_width = self.w * scale
