@@ -77,6 +77,9 @@ class Hackceler8(gfx.Window):
         self.paths_built_for: Optional[str] = None
         self.item_paths: dict[str, list[str]] = {}
 
+        self.map_overview_mode = False
+        self.map_overview_keys_pressed: set[Keys] = set()
+
     def setup_game(self):
         self.game = Venator(self.net, is_server=False)
 
@@ -240,7 +243,11 @@ class Hackceler8(gfx.Window):
                 return
             self.setup_game()
 
-        if not self.single_tick_mode:
+        if self.map_overview_mode:
+            self._tick_map_overview()
+            return
+
+        if not self.single_tick_mode and not self.map_overview_mode:
             self.tick_once()
 
     def render(self, time: float, frame_time: float):
@@ -318,6 +325,16 @@ class Hackceler8(gfx.Window):
             self.camera.set_scale(self.camera.scale - 1)
             return
         
+        if k == Keys.O and modifiers.ctrl:
+            self.map_overview_mode = not self.map_overview_mode
+            logging.info(f"map overview mode: {self.map_overview_mode}")
+
+            if not self.map_overview_mode:
+                self.map_overview_keys_pressed.clear()
+                self._center_camera_to_player()
+
+            return
+        
         if k == Keys.EQUAL:
             self.single_tick_mode = not self.single_tick_mode
             logging.info(f"single tick mode: {self.single_tick_mode}")
@@ -365,6 +382,11 @@ class Hackceler8(gfx.Window):
         if self.game == None:
             return
 
+        if self.map_overview_mode:
+            if k in {Keys.W, Keys.A, Keys.S, Keys.D}:
+                self.map_overview_keys_pressed.add(k)
+            return
+
         if k:
             self.game.raw_pressed_keys.add(k)
             if cancel_applying_ticks_on_key_pressed:
@@ -373,7 +395,13 @@ class Hackceler8(gfx.Window):
     def on_key_release(self, symbol: int, _modifiers: int):
         if self.game is None:
             return
+
         k = Keys.from_ui(symbol)
+
+        if self.map_overview_mode:
+            self.map_overview_keys_pressed.discard(k)
+            return
+
         if k in self.game.raw_pressed_keys:
             self.game.raw_pressed_keys.remove(k)
 
@@ -649,6 +677,19 @@ class Hackceler8(gfx.Window):
 
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
+
+    def _tick_map_overview(self):
+        if not self.map_overview_keys_pressed:
+            return
+
+        if Keys.W in self.map_overview_keys_pressed:
+            self.camera.position.y += 10
+        if Keys.A in self.map_overview_keys_pressed:
+            self.camera.position.x -= 10
+        if Keys.S in self.map_overview_keys_pressed:
+            self.camera.position.y -= 10
+        if Keys.D in self.map_overview_keys_pressed:
+            self.camera.position.x += 10
 
     def full_screenshot(self, dir="./screenshots", format="jpeg", name: str = None):
         # Precalc the "interesting" area to be displayed in the screenshot
