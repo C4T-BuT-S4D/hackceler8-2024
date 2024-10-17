@@ -320,16 +320,21 @@ class Hackceler8(gfx.Window):
             macro_ticks = []
             for macro_tick in macro:
                 tick_keys = set()
-                if not isinstance(macro_tick, str):
-                    logging.error(f'bad macro (not str) "{macro_tick}"')
+                text_input = None
+                if isinstance(macro_tick, str):
+                    for key in macro_tick:
+                        key_v = Keys.from_serialized(key)
+                        if not key_v:
+                            logging.error(f'bad macro (not key) "{key}"')
+                            return
+                        tick_keys.add(key_v)
+                elif isinstance(macro_tick, dict):
+                    tick_keys = set(macro_tick.get("keys", []))
+                    text_input = macro_tick.get("text_input")
+                else:
+                    logging.error(f'bad macro (not str or dict) "{macro_tick}"')
                     return
-                for key in macro_tick:
-                    key_v = Keys.from_serialized(key)
-                    if not key_v:
-                        logging.error(f'bad macro (not key) "{key}"')
-                        return
-                    tick_keys.add(key_v)
-                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False))
+                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False, text_input=text_input))
 
             logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)
