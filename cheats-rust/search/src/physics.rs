@@ -10,7 +10,7 @@ use crate::settings::SearchSettings;
 use crate::{
     geometry::Pointf,
     hitbox::Hitbox,
-    moves::{Direction, Move},
+    moves::{Action, Direction, Move},
     settings::{GameMode, PhysicsSettings},
     static_state::StaticState,
 };
@@ -51,12 +51,19 @@ impl PhysState {
 impl PhysState {
     pub fn tick(
         &mut self,
-        mov: Move,
-        shift_pressed: bool,
+        act: Action,
         state: &StaticState,
         _search_settings: &SearchSettings,
     ) {
-        self.player_tick(state, mov, shift_pressed);
+        self.player_tick(state, act);
+
+        // projectiles are checked before the player's position is updated
+        for proj in &state.proj {
+            if proj.collides(&self.player.get_hitbox()) {
+                self.player.dead = true;
+                return;
+            }
+        }
 
         // Player is the only moving object we have.
         self.player.update_position();
@@ -74,6 +81,8 @@ impl PhysState {
         if self.player.in_the_air {
             self.player.vy -= self.gravity;
         }
+
+        self.was_step_up_before = act.mov.is_up();
     }
 
     pub fn close_enough(&self, target_state: &PhysState, precision: f64) -> bool {
@@ -131,7 +140,7 @@ impl PhysState {
             return;
         }
         self.player.vx = 0.0;
-        
+
         if collision.mpv.x < 0.0 {
             self.player.move_by(collision.hitbox.get_leftmost_point() - self.player.get_hitbox().get_rightmost_point(), 0.0);
         } else {
@@ -168,9 +177,9 @@ impl PhysState {
         self.player.move_by(0.0, 1.0);
     }
 
-    fn player_tick(&mut self, state: &StaticState, mov: Move, shift_pressed: bool) {
-        self.player_update_movement(state, mov, shift_pressed);
-        self.player_update_stamina(shift_pressed);
+    fn player_tick(&mut self, state: &StaticState, act: Action) {
+        self.player_update_movement(state, act);
+        self.player_update_stamina(act.shift);
     }
 
     fn player_update_stamina(&mut self, shift_pressed: bool) {
@@ -183,8 +192,7 @@ impl PhysState {
     fn player_update_movement(
         &mut self,
         state: &StaticState,
-        mov: Move,
-        shift_pressed: bool,
+        act: Action,
     ) {
         self.player.vx = 0.0;
         if self.settings.mode == GameMode::Scroller {
@@ -192,24 +200,24 @@ impl PhysState {
         }
 
         self.player.running = false;
-        
-        let sprinting = shift_pressed && self.player.stamina > 0.0;
 
-        if mov.is_right() {
+        let sprinting = act.shift && self.player.stamina > 0.0;
+
+        if act.mov.is_right() {
             self.player_change_direction(state, Direction::E, sprinting);
         }
 
-        if mov.is_left() {
+        if act.mov.is_left() {
             self.player_change_direction(state, Direction::W, sprinting);
         }
 
-        if mov.is_up() {
+        if !self.was_step_up_before && act.mov.is_up() {
             self.player_change_direction(state, Direction::N, sprinting);
         }
-        
-        if self.settings.mode == GameMode::Scroller && mov.is_down() {
+
+        if self.settings.mode == GameMode::Scroller && act.mov.is_down() {
             self.player_change_direction(state, Direction::S, sprinting);
-        }        
+        }
     }
 
     fn player_change_direction(&mut self, state: &StaticState, direction: Direction, sprinting: bool) {
@@ -379,6 +387,7 @@ pub fn get_transition(
     next_move: Move,
     shift_pressed: bool,
 ) -> PlayerState {
-    state.tick(next_move, shift_pressed, &static_state, &settings);
+    let act = Action { mov: next_move, shift: shift_pressed };
+    state.tick(act, &static_state, &settings);
     state.player
 }

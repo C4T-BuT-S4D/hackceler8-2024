@@ -6,6 +6,7 @@ use encoding::{
 };
 use pyo3::prelude::*;
 
+use dodge::dodge_search;
 use env_modifier::EnvModifier;
 use geometry::{Pointf, Rectangle};
 use hitbox::Hitbox;
@@ -21,6 +22,7 @@ use crate::static_state::StaticState;
 
 pub mod astar;
 pub mod encoding;
+pub mod dodge;
 pub mod env_modifier;
 pub mod geometry;
 pub mod hitbox;
@@ -50,6 +52,8 @@ fn search(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Rectangle>()?;
     m.add_function(wrap_pyfunction!(astar_search, m)?)?;
     m.add_function(wrap_pyfunction!(get_transition, m)?)?;
+
+    m.add_function(wrap_pyfunction!(dodge_search, m)?)?;
 
     m.add_function(wrap_pyfunction!(serialize_state, m)?)?;
     m.add_function(wrap_pyfunction!(deserialize_state, m)?)?;

@@ -6,7 +6,7 @@ use rayon::prelude::*;
 
 use crate::static_state::StaticState;
 use crate::{
-    moves::Move,
+    moves::{Action, Move},
     physics::{PhysState, PLAYER_JUMP_SPEED, PLAYER_MOVEMENT_SPEED},
     player::PlayerState,
     settings::{GameMode, SearchSettings},
@@ -74,9 +74,63 @@ struct SearchResult<'a> {
     prev_state: &'a PhysState,
     ticks: i32,
     f_score: f64,
-    next_move: Move,
-    shift: bool,
+    next_action: Action,
     next_state: PhysState,
+}
+
+
+pub fn allowed_actions(settings: &SearchSettings) -> Vec<Action> {
+    let shift_variants = if settings.always_shift {
+        vec![true]
+    } else if settings.disable_shift {
+        vec![false]
+    } else {
+        vec![false, true]
+    };
+    let mut ans = vec![];
+    let allowed_moves = Move::all(settings);
+    for &next_move in &allowed_moves {
+        for &(mut shift_pressed) in shift_variants.iter() {
+            if settings.mode == GameMode::Platformer
+                && shift_pressed
+                && next_move.is_only_vertical()
+            {
+                // such moves are inferior to the same move with no shift
+                // this has to override always_shift
+                if settings.always_shift {
+                    shift_pressed = false;
+                } else {
+                    continue; // no-shift option already considered in other iteration
+                }
+            }
+            ans.push(Action { mov: next_move, shift: shift_pressed });
+        }
+    }
+    ans
+}
+
+pub fn apply_transition(
+    settings: &SearchSettings,
+    state: PhysState,
+    static_state: &StaticState,
+    act: Action) -> PhysState {
+    let mut neighbor_state = state;
+    neighbor_state.tick(act, static_state, settings);
+    neighbor_state
+}
+
+pub fn transitions<'a>(
+    settings: &'a SearchSettings,
+    state: &'a PhysState,
+    static_state: &'a StaticState,
+    acts: &'a [Action]
+) -> impl Iterator<Item = (Action, PhysState)> + 'a {
+    acts.iter().filter(|&act| !(act.mov.is_up() && state.was_step_up_before))
+        .map(move |&act| {
+                let mut neighbor_state = *state;
+                neighbor_state.tick(act, static_state, settings);
+                (act, neighbor_state)
+        }).filter(|(act, st)| !st.player.dead)
 }
 
 #[pyfunction]
@@ -89,7 +143,7 @@ pub fn astar_search(
     println!("running astar search with settings {settings:?}");
 
     let mut open_set = BinaryHeap::new();
-    let mut came_from: HashMap<PhysState, (PhysState, Move, bool)> = HashMap::new();
+    let mut came_from: HashMap<PhysState, (PhysState, Action)> = HashMap::new();
     let mut g_score: HashMap<PhysState, i32> = HashMap::new();
     open_set.push(SearchNode::new(
         heuristic(&settings, &target_state.player, &initial_state.player),
@@ -98,15 +152,15 @@ pub fn astar_search(
     ));
     g_score.insert(initial_state, 0);
 
-    let shift_variants = if settings.always_shift {
-        vec![true]
-    } else if settings.disable_shift {
-        vec![false]
-    } else {
-        vec![false, true]
-    };
-
-    let allowed_moves = Move::all(&settings);
+    //let shift_variants = if settings.always_shift {
+    //    vec![true]
+    //} else if settings.disable_shift {
+    //    vec![false]
+    //} else {
+    //    vec![false, true]
+    //};
+    //let allowed_moves = Move::all(&settings);
+    let acts = allowed_actions(&settings);
 
     let start = SystemTime::now();
     let iter = AtomicUsize::new(0);
@@ -150,52 +204,25 @@ pub fn astar_search(
 
                 let mut next_states = Vec::new();
 
-                for &next_move in &allowed_moves {
-                    for &(mut shift_pressed) in shift_variants.iter() {
-                        if next_move.is_up() && state.was_step_up_before {
-                            continue;
-                        }
+                for (act, neighbor_state) in transitions(&settings, state, &static_state, &acts) {
 
-                        if settings.mode == GameMode::Platformer
-                            && shift_pressed
-                            && next_move.is_only_vertical()
-                        {
-                            // such moves are inferior to the same move with no shift
-                            // this has to override always_shift
-                            if settings.always_shift {
-                                shift_pressed = false;
-                            } else {
-                                continue; // no-shift option already considered in other iteration
-                            }
-                        }
-
-                        let mut neighbor_state = *state;
-                        neighbor_state.was_step_up_before = next_move.is_up();
-                        neighbor_state.tick(next_move, shift_pressed, &static_state, &settings);
-
-                        if neighbor_state.player.dead {
-                            continue;
-                        }
-
-                        if g_score
-                            .get(&neighbor_state)
-                            .is_some_and(|old_ticks| ticks + 1 >= *old_ticks)
-                        {
-                            continue;
-                        }
-
-                        let f_score = f64::from(ticks + 1)
-                            + heuristic(&settings, &target_state.player, &neighbor_state.player);
-
-                        next_states.push(SearchResult {
-                            prev_state: state,
-                            ticks: *ticks,
-                            f_score,
-                            next_move,
-                            shift: shift_pressed,
-                            next_state: neighbor_state,
-                        });
+                    if g_score
+                        .get(&neighbor_state)
+                        .is_some_and(|old_ticks| ticks + 1 >= *old_ticks)
+                    {
+                        continue;
                     }
+
+                    let f_score = f64::from(ticks + 1)
+                        + heuristic(&settings, &target_state.player, &neighbor_state.player);
+
+                    next_states.push(SearchResult {
+                        prev_state: state,
+                        ticks: *ticks,
+                        f_score,
+                        next_action: act,
+                        next_state: neighbor_state,
+                    });
                 }
 
                 Some(next_states)
@@ -206,7 +233,7 @@ pub fn astar_search(
             for sr in search_results {
                 if sr.next_state.close_enough(&target_state, TARGET_PRECISION) {
                     let mut moves = reconstruct_path(&came_from, *sr.prev_state);
-                    moves.push((sr.next_move, sr.shift, sr.next_state.player));
+                    moves.push((sr.next_action.mov, sr.next_action.shift, sr.next_state.player));
                     println!(
                         "found path: iter={:?}; ticks={:?}; elapsed={:?}",
                         iter,
@@ -223,25 +250,25 @@ pub fn astar_search(
                     continue;
                 }
 
-                came_from.insert(sr.next_state, (*sr.prev_state, sr.next_move, sr.shift));
+                came_from.insert(sr.next_state, (*sr.prev_state, sr.next_action));
                 g_score.insert(sr.next_state, sr.ticks + 1);
                 open_set.push(SearchNode::new(sr.f_score, sr.ticks + 1, sr.next_state));
             }
         }
     }
-
+    println!("of {:?}, {:?}", g_score.len(), g_score.iter().filter(|(&st,_)|st.was_step_up_before).count());
     None
 }
 
 fn reconstruct_path(
-    came_from: &HashMap<PhysState, (PhysState, Move, bool)>,
+    came_from: &HashMap<PhysState, (PhysState, Action)>,
     current_node: PhysState,
 ) -> Vec<(Move, bool, PlayerState)> {
     let mut path = Vec::new();
     let mut current = current_node;
 
-    while let Some((prev, move_direction, shift_pressed)) = came_from.get(&current) {
-        path.push((*move_direction, *shift_pressed, current.player));
+    while let Some((prev, act)) = came_from.get(&current) {
+        path.push((act.mov, act.shift, current.player));
         current = *prev;
     }
 

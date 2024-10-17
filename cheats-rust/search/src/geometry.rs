@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 use pyo3::{pyclass, pymethods};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
 pub struct Pointf {
     pub x: f64,

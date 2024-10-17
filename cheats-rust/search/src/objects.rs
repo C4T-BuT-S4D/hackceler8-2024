@@ -9,4 +9,5 @@ pub enum ObjectType {
     SpikeOuch,
     Portal,
     Warp,
+    Projectile,
 }

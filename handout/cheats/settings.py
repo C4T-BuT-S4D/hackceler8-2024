@@ -22,6 +22,11 @@ class ExtraSettings(Form):
         description="Number of ticks to emulate in slow_ticks_mode",
     )
 
+    dodge = BooleanField(
+        default=True,
+        label="Dodge projectiles",
+    )
+
     semirun_100 = BooleanField(
         default=True,
         label="Semi-run at stamina 100",

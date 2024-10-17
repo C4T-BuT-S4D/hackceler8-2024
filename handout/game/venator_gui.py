@@ -428,8 +428,10 @@ class Hackceler8(gfx.Window):
         if self.recording_enabled and time.time() - self.last_save > cheats_settings["auto_recording_interval"]:
             self.save_recording(suffix='auto')
 
-        if cheats_settings["validate_transitions"]:
-            settings, state, static_state = self._dump_rust_state()
+        move = None
+        # VALIDATE TRANSITIONS + DODGE
+        if self.game != None and self.game.physics_engine != None:
+            settings, state, static_state = self._dump_rust_state(enable_portals=False, enable_proj=True)
             keys = self.game.raw_pressed_keys.copy()
             if Keys.W in keys and Keys.W in self.game.prev_pressed_keys:
                 keys.remove(Keys.W)
@@ -440,7 +442,7 @@ class Hackceler8(gfx.Window):
             else:
                 shift = False
             keys &= {Keys.W, Keys.A, Keys.S, Keys.D}
-            if keys == {Keys.W}:
+            if keys == {Keys.W} or keys == {Keys.W, Keys.A, Keys.D}:
                 move = search.Move.W
             elif keys == {Keys.A}:
                 move = search.Move.A
@@ -456,16 +458,22 @@ class Hackceler8(gfx.Window):
                 move = search.Move.SA
             elif keys == {Keys.S, Keys.D}:
                 move = search.Move.SD
-            elif keys == set():
+            elif keys == set() or keys == {Keys.A, Keys.D}:
                 move = search.Move.NONE
             else:
                 logging.warning(f"unexpected move {keys}")
                 move = None
 
-            if move is not None:
+            if cheats_settings['validate_transitions'] and move is not None:
                 expected = search.get_transition(
                     settings, static_state, state, move, shift
                 )
+            # DODGES
+            if cheats_settings['dodge'] and move is not None:
+                ret = search.dodge_search(settings, state, static_state, move, shift)
+                if ret != (move, shift):
+                    print('DODGE VIA', (move, shift), 'TO', ret)
+                    self.game.raw_pressed_keys = set(search_move_to_keys(ret[0], ret[1]))
 
         saved_map = self.game.current_map
         was_player_dead = self.game.player and self.game.player.dead
@@ -879,7 +887,7 @@ class Hackceler8(gfx.Window):
 
         self.paths_built_for = self.game.current_map
 
-    def _dump_rust_state(self):
+    def _dump_rust_state(self, enable_portals: bool, enable_proj: bool):
         mode = None
         player = self.game.player
         mode = search.GameMode.Platformer
@@ -901,13 +909,14 @@ class Hackceler8(gfx.Window):
             simple_geometry=cheat_settings["simple_geometry"],
             state_batch_size=cheat_settings["state_batch_size"],
         )
-
+        zero_point = search.Pointf(0.0, 0.0)
         static_objects = [
             (
                 search.Hitbox(
                     search.Rectangle(o.x1, o.x2, o.y1, o.y2),
                 ),
                 search.ObjectType.Wall,
+                zero_point
             )
             for o in self.game.objects + self.game.stateful_objects if o.nametype == "Wall"
         ]
@@ -915,19 +924,38 @@ class Hackceler8(gfx.Window):
         deadly_objects_type = {
             "Ouch": search.ObjectType.Ouch,
             "SpikeOuch": search.ObjectType.SpikeOuch,
-            "Portal": search.ObjectType.Portal,
+            "Projectile": search.ObjectType.Projectile,
+        } | ({
             "warp": search.ObjectType.Warp,
-        }
+            "Portal": search.ObjectType.Portal,
+            } if enable_portals else {})
+
         static_objects += [
             (
                 search.Hitbox(
                     search.Rectangle(o.x1, o.x2, o.y1, o.y2),
                 ),
                 deadly_objects_type[o.nametype],
+                zero_point
             )
             for o in self.game.objects + self.game.stateful_objects
             if o.nametype in deadly_objects_type
         ]
+
+        if enable_proj:
+            projs = [
+                (
+                    search.Hitbox(
+                        search.Rectangle(o.x1, o.x2, o.y1, o.y2),
+                    ),
+                    deadly_objects_type[o.nametype],
+                    search.Pointf(getattr(o, 'x_speed', 0), getattr(o, 'y_speed', 0))
+                )
+                for o in self.game.projectile_system.active_projectiles
+                if o.nametype in deadly_objects_type
+            ]
+            static_objects += projs
+
 
         environments = [
             search.EnvModifier(
@@ -1021,7 +1049,7 @@ class Hackceler8(gfx.Window):
             target_y,
         )
 
-        settings, initial_state, static_state = self._dump_rust_state()
+        settings, initial_state, static_state = self._dump_rust_state(enable_portals=True, enable_proj=False)
 
         target_state = search.PhysState(
             player=search.PlayerState(
@@ -1077,37 +1105,41 @@ class Hackceler8(gfx.Window):
         else:
             self.ticks_to_apply = []
             for move, shift, state in path:
-                match move:
-                    case search.Move.W:
-                        moves = {Keys.W}
-                    case search.Move.A:
-                        moves = {Keys.A}
-                    case search.Move.D:
-                        moves = {Keys.D}
-                    case search.Move.WA:
-                        moves = {Keys.W, Keys.A}
-                    case search.Move.WD:
-                        moves = {Keys.W, Keys.D}
-                    case search.Move.S:
-                        moves = {Keys.S}
-                    case search.Move.SA:
-                        moves = {Keys.S, Keys.A}
-                    case search.Move.SD:
-                        moves = {Keys.S, Keys.D}
-                    case search.Move.NONE:
-                        moves = set()
-                    case _:
-                        print("unknown move", move)
-                        continue
-
-                if shift:
-                    moves.add(Keys.LSHIFT)
 
                 self.ticks_to_apply.append(
                     TickData(
                         force_keys=True,
-                        keys=list(moves),
+                        keys=search_move_to_keys(move, shift)
                     )
                 )
 
             print("path found", [x[:2] for x in path])
+
+def search_move_to_keys(move, shift):
+    moves = set()
+    match move:
+        case search.Move.W:
+            moves = {Keys.W}
+        case search.Move.A:
+            moves = {Keys.A}
+        case search.Move.D:
+            moves = {Keys.D}
+        case search.Move.WA:
+            moves = {Keys.W, Keys.A}
+        case search.Move.WD:
+            moves = {Keys.W, Keys.D}
+        case search.Move.S:
+            moves = {Keys.S}
+        case search.Move.SA:
+            moves = {Keys.S, Keys.A}
+        case search.Move.SD:
+            moves = {Keys.S, Keys.D}
+        case search.Move.NONE:
+            moves = set()
+        case _:
+            print("unknown move", move)
+            return []
+
+    if shift:
+        moves.add(Keys.LSHIFT)
+    return list(moves)
