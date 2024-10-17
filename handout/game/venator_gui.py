@@ -29,7 +29,7 @@ import time
 import secrets
 from copy import deepcopy
 from cheats.settings import get_settings, update_settings
-from cheats.state import get_state, update_state, State
+from cheats.state import update_state, State, MapFlag, MapObject
 from cheats.lib.tick_data import TickData
 from moderngl_window.context.base import KeyModifiers
 from game.engine.generics import GenericObject
@@ -940,7 +940,20 @@ class Hackceler8(gfx.Window):
         self.game.current_recording = []
 
     def _save_overview_state(self):
-        update_state(lambda s: deepcopy(State(flags=self.game.match_flags)))
+        flagdict = {}
+        for flag in self.game.match_flags.flags:
+            flagdict[flag.fullname] = flag.stars
+
+        flags: list[MapFlag] = []
+        coins: list[MapObject] = []
+        for map_name, map_attrs in self.game.maps_dict.items():
+            for o in map_attrs.tiled_map.objects:
+                if o.name and o.name.startswith("coin_"):
+                    coins.append(MapObject(map_name, o))
+                if o.name and o.name in flagdict:
+                    flags.append(MapFlag(map_name, o, flagdict[o.name]))
+
+        update_state(lambda s: deepcopy(State(flags=flags, coins=coins)))
 
     def _build_object_map_mapping(self):
         self.object_map_mapping = {}

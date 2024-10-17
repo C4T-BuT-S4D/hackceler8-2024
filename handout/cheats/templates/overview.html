@@ -1,16 +1,48 @@
 {% import "wtf.jinja" as wtf %} {% extends "base.html" %} {% block content %}
+
+{% set map_styles = ({"base":"color: black", "beach":"color: teal", "ocean":"color: blue", "cloud":"color: #00BFFF", "ruins":"color: brown"})	%}
+
 <div class="grid is-col-min-12">
   {% if state %}
   <div class="cell box is-dark theme-colors-light">
     <h1 class="subtitle">Flags</h1>
     <div class="content">
-    {% for flag in state.flags.flags %}
-      <p style="margin: 0;">{{ flag.fullname }}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span></p>
+    {% for flag in state.flags %}
+      <div class="is-flex is-justify-content-space-between is-align-items-center">
+        <span style="{{ map_styles[flag.mapname] or '#262124' }}">{{ flag.mapname }}</span>
+        <span>
+          <button disabled class="button px-2 py-1">👀 Show</button>
+          <button disabled class="button px-2 py-1">🎯 Trace</button>
+        </span>
+      </div>
+      <p class="mt-2" style="text-align: center;">
+        {{ flag.obj.name }}: <span style="white-space: nowrap;">{{ flag.stars }} ⭐</span>
+      </p>
       {% if not loop.last %}
       <hr class="theme-colors"/>
       {% endif %}
     {% endfor %}
     </div>
+  </div>
+  <div class="cell box is-dark theme-colors-light">
+    <h1 class="subtitle">Coins</h1>
+    {% for coin in state.coins %}
+    <div>
+      <div class="is-flex is-justify-content-space-between is-align-items-center">
+        <span style="{{ map_styles[coin.mapname] or '#262124' }}">{{ coin.mapname }}</span>
+        <span>
+          <button disabled class="button px-2 py-1">👀 Show</button>
+          <button disabled class="button px-2 py-1">🎯 Trace</button>
+        </span>
+      </div>
+      <p class="mt-2" style="text-align: center;">
+        <span class="title is-6">{{ coin.obj.display_name }} 💵 {{ coin.obj.name }}</span>
+      </p>
+    </div>
+    {% if not loop.last %}
+    <hr class="theme-colors my-2"/>
+    {% endif %}
+    {% endfor %}
   </div>
   <div class="cell">Cell 2</div>
   <div class="cell">Cell 3</div>

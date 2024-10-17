@@ -1,11 +1,25 @@
 from threading import RLock
-from game.components.flags import Flags
 from dataclasses import dataclass
 from typing import Optional, Callable
 
+from game.components.flags import Flags
+from game.engine.generics import GenericObject
+
+@dataclass
+class MapObject:
+    mapname: str
+    obj: GenericObject
+
+@dataclass
+class MapFlag:
+    mapname: str
+    obj: GenericObject
+    stars: int
+
 @dataclass
 class State:
-    flags: Flags = None
+    flags: list[MapFlag] = None
+    coins: list[MapObject] = None
 
 __lock: RLock = RLock()
 __state: Optional[State] = None
