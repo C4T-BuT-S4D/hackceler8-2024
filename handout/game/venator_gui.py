@@ -707,7 +707,10 @@ class Hackceler8(gfx.Window):
                         text += f" to {o.map_name}"
                     if name := getattr(o, "name", None):
                         text += f" | {name}"
-                    if (health := getattr(o, "health", None)) and o.nametype not in {"warp"}:
+                    if (health := getattr(o, "health", None)) and o.nametype not in {
+                        "warp", "Element", "Portal", "Weapon", "ArcadeBox", "KeyGate", "BossGate",
+                        "Ouch", "Fire", "Item", "NPC",
+                    }:
                         text += f" | {health:.02f}"
                     if o.nametype == "Enemy" and o.can_shoot:
                         text += f" | st={o.shoot_timer}"
