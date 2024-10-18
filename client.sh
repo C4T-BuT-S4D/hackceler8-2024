@@ -26,11 +26,10 @@ if [ "$1" = "local" ]; then
   keypath="./ca/dev-team.key"
   standalone=""
 elif [ "$1" = "remote" ]; then
-  # TODO: change this to the actual hostname
-  hostname="team6.hackceler8-2023.ctfcompetition.com"
-  capath="$HOME/ca.crt"
-  certpath="$HOME/team6"
-  keypath="$HOME/team6.key"
+  hostname="team6.hackceler8-2024.ctfcompetition.com"
+  capath="$HOME/team6/ca.crt"
+  certpath="$HOME/team6/server.crt"
+  keypath="$HOME/team6/server.key"
   standalone=""
 elif [ "$1" = "standalone" ]; then
   hostname=""
