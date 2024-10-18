@@ -167,10 +167,13 @@ __settings: SettingsDict = {
 
 
 def init_settings():
+    # initialize default settings from forms
     forms = [form() for form in settings_forms]
     data = get_settings()
     for form in forms:
         data.update(**deepcopy(form.data))
+
+    # load saved macros
     try:
         with open(os.path.join(os.path.dirname(__file__), "macros.json")) as f:
             macros = json.load(f)
@@ -178,8 +181,20 @@ def init_settings():
         # merge only those macros which exist instead of overwriting
         for i, macro in enumerate(macros):
             data["macros"][i] = macro
+    except FileNotFoundError:
+        pass
     except Exception as e:
         logging.warning(f"Failed to load macros from macros.json: {e}")
+
+    # load saved recording filename
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "recording_filename.txt")) as f:
+            data["recording_filename"] = f.read().strip()
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        logging.warning(f"Failed to load recording filename from recording_filename.txt: {e}")
+
     logging.info(f"Initial settings: {data}")
     update_settings(lambda s: s.update(**data))
 
