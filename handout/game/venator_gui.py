@@ -424,7 +424,7 @@ class Hackceler8(gfx.Window):
             return
 
         if self.map_overview_mode:
-            if k in {Keys.W, Keys.A, Keys.S, Keys.D}:
+            if k in {Keys.W, Keys.A, Keys.S, Keys.D, Keys.LSHIFT}:
                 self.map_overview_keys_pressed.add(k)
             return
 
@@ -800,15 +800,17 @@ class Hackceler8(gfx.Window):
     def _tick_map_overview(self):
         if not self.map_overview_keys_pressed:
             return
+        
+        d = 50 if Keys.LSHIFT in self.map_overview_keys_pressed else 20
 
         if Keys.W in self.map_overview_keys_pressed:
-            self.camera.position.y += 10
+            self.camera.position.y += d
         if Keys.A in self.map_overview_keys_pressed:
-            self.camera.position.x -= 10
+            self.camera.position.x -= d
         if Keys.S in self.map_overview_keys_pressed:
-            self.camera.position.y -= 10
+            self.camera.position.y -= d
         if Keys.D in self.map_overview_keys_pressed:
-            self.camera.position.x += 10
+            self.camera.position.x += d
 
     def full_screenshot(self, dir="./screenshots", format="jpeg", name: str = None):
         # Precalc the "interesting" area to be displayed in the screenshot
