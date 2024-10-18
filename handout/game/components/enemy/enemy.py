@@ -262,6 +262,14 @@ class Golem(Enemy):
         self.update_hitbox(rect)
 
 
+class GhostGolem(Golem):
+    def __init__(self, coords, hbc, **kwargs):
+        super().__init__(coords, **kwargs)
+        hbc = eval(hbc)
+        rect = hitbox.Rectangle(hbc[0] - 22, hbc[0] + 22, hbc[1] - 25, hbc[1] + 25)
+        self.update_hitbox(rect)
+
+
 class Orc(Enemy):
 
     def __init__(
@@ -278,6 +286,14 @@ class Orc(Enemy):
         self.can_melee = True
         self.melee_range = 70
         rect = hitbox.Rectangle(coords.x - 20, coords.x + 20, coords.y - 29, coords.y + 29)
+        self.update_hitbox(rect)
+
+
+class GhostOrc(Orc):
+    def __init__(self, coords, hbc, **kwargs):
+        super().__init__(coords,**kwargs)
+        hbc = eval(hbc)
+        rect = hitbox.Rectangle(hbc[0] - 22, hbc[0] + 22, hbc[1] - 25, hbc[1] + 25)
         self.update_hitbox(rect)
 
 

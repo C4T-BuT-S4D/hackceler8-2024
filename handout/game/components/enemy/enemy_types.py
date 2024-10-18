@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .enemy import Block, Crab, Urchin, Golem, Orc, Vulture, Eagle, Octopus, Siren
+from .enemy import Block, Crab, Urchin, Golem, Orc, Vulture, Eagle, Octopus, Siren, GhostGolem, GhostOrc
 
 ENEMY_TYPES = {
     "block_enemy": Block,
@@ -24,4 +24,6 @@ ENEMY_TYPES = {
     "eagle_enemy": Eagle,
     "octopus_enemy": Octopus,
     "siren_enemy": Siren,
+    "ghostgolem_enemy": GhostGolem,
+    "ghostorc_enemy": GhostOrc,
 }

@@ -46,6 +46,7 @@ from game.engine.venatizer import Venatizer
 from game.engine.screen_fader import ScreenFader
 from game.engine.save_file import SaveFile, apply_save_state
 from game.map import maps, tilemap
+from game.components.gems_collection import new_gc
 import xxhash
 
 
@@ -121,6 +122,9 @@ class Venator:
         self.projectile_system: Optional[ProjectileSystem] = None
         self.arcade_system: Optional[ArcadeSystem] = None
         self.physics_engine: Optional[physics.PhysicsEngine] = None
+        self.piquackso = None
+
+        self.gem_collection = None
 
         self.boss: Optional[GenericObject] = None
 
@@ -312,6 +316,14 @@ class Venator:
                 else:
                     logging.info(f"Duplicate object {o.nametype, o.name} detected")
 
+            elif o.nametype == "gem":
+                self.gem_collection = new_gc()
+                self.objects.append(o)
+            elif o.nametype == "atm":
+                o.game = self
+                self.objects.append(o)
+                o.reward_function.game = self
+
             else:
                 self.objects.append(o)
                 if o.nametype == "NPC" and o.name.startswith("trapped_"):
@@ -474,11 +486,23 @@ class Venator:
             self.map_loaded = True
             self.setup()
 
-        self.pressed_keys = self.tracked_keys & self.raw_pressed_keys
-        self.newly_pressed_keys = self.pressed_keys.difference(
-            self.prev_pressed_keys
-        )
-        self.prev_pressed_keys = self.pressed_keys.copy()
+        if self.piquackso:
+            if len(self.piquackso.commands) < 1:
+                self.piquackso = None
+                self.player.dead = True
+            else:
+                duck_command = self.piquackso.commands.pop()
+                self.pressed_keys = self.tracked_keys & set([duck_command])
+                self.newly_pressed_keys = self.pressed_keys.difference(
+                    self.prev_pressed_keys
+                )
+                self.prev_pressed_keys = self.pressed_keys.copy()
+        else:
+            self.pressed_keys = self.tracked_keys & self.raw_pressed_keys
+            self.newly_pressed_keys = self.pressed_keys.difference(
+                self.prev_pressed_keys
+            )
+            self.prev_pressed_keys = self.pressed_keys.copy()
 
         self._save()
 
@@ -628,6 +652,17 @@ class Venator:
                 current_distance = o.proximity(self.player)
                 if current_distance < o.modifier.min_distance:
                     self.player.apply_modifier(o.modifier, current_distance)
+            if o.name == "Piquackso" and o.collides(self.player) and self.piquackso is None:
+                if self.painting_system:
+                    o.start()
+                    self.piquackso = o
+                else:
+                    self.player.dead = True
+
+            if self.piquackso:
+                if o.nametype == "NPC" and o.expand(20).collides(self.player):
+                    self.piquackso = None
+                    o.dialogue()
 
     # Path should be the path of module in Python, such as game.components.boss.implementation
     def server_send_reload_module(self, paths: list[str]):

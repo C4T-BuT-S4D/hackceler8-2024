@@ -45,7 +45,7 @@ WATER_MODIFIER = EnvModifier("water", 0.7, 0.7, 0.25, True)
 CLOUD_MODIFIER_1 = EnvModifier("cloud_1", 1.3, 1, 1, False)
 CLOUD_MODIFIER_2 = EnvModifier("cloud_2", 1.7, 1, 1, False)
 CLOUD_MODIFIER_3 = EnvModifier("cloud_3", 2.0, 1, 1, False)
-ZERO_G_MODIFIER = EnvModifier("zero_g", 2.0, 1, 0, False)
+ZERO_G_MODIFIER = EnvModifier("zero_g", 0.5, 0.5, 0, False)
 
 modifiers = {
     "water": WATER_MODIFIER, "cloud_1": CLOUD_MODIFIER_1,

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import logging
 from game.components.boss.boss import Boss
 from game.engine import hitbox
 
@@ -29,7 +31,7 @@ class DialogueBoss(Boss):
         if self.game.is_server or self.game.net is None:
             self.secret_server_dialogue()
         else:
-            self.game.display_textbox(from_server=True, response_callbacks={"Imposssssible, that's correct": self._start_destruct})
+            self.game.display_textbox(from_server=True, response_callbacks={"Imposssssible, " + "that's correct": self._start_destruct})
 
     def secret_server_dialogue(self):
         self.game.display_textbox("Boss battle only available on the sssserver.")

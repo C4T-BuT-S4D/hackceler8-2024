@@ -46,6 +46,7 @@ class Player(generics.GenericObject):
         rect = hitbox.Rectangle(self.x - 24, self.x + 24, self.y - 26, self.y + 20)
         self.update(rect)
         self.set_health(self.MAX_HEALTH)
+        self.forget_timer = 0
         self.direction = self.DIR_E
         self.face_towards = self.DIR_E
         self.prev_x = self.x
@@ -87,13 +88,7 @@ class Player(generics.GenericObject):
         if self.scroller_mode:
             self.can_jump = True
             return
-        self.can_jump = False
-        self.move(0, -1)
-        _, collisions_y, _ = self.game.physics_engine._get_collisions_list(self)
-        for _, mpv in collisions_y:
-            if mpv.y > 0:
-                self.can_jump = True
-        self.move(0, 1)
+        self.can_jump = (self.prev_y == self.y)
 
     def melee(self, pressed_keys, newly_pressed_keys):
         if self.dead or self.immobilized:
@@ -152,13 +147,26 @@ class Player(generics.GenericObject):
         if self.sprite.get_animation() == "melee" or self.dead or self.damage_anim_counter > 0:  # Can't move
             return
 
-        if Keys.D in pressed_keys and Keys.A not in pressed_keys:
-            computed_direction = self.DIR_E
-            self.change_direction(computed_direction, sprinting)
+        if self.game.has_item("forgetful"):
+            if Keys.D in pressed_keys or Keys.A in pressed_keys:
+                self.forget_timer += 1
+            else:
+                self.forget_timer = 0
 
-        if Keys.A in pressed_keys and Keys.D not in pressed_keys:
-            computed_direction = self.DIR_W
-            self.change_direction(computed_direction, sprinting)
+            if self.forget_timer < 30:
+                if Keys.D in pressed_keys and Keys.A not in pressed_keys:
+                    computed_direction = self.DIR_E
+                    self.change_direction(computed_direction, sprinting)
+                if Keys.A in pressed_keys and Keys.D not in pressed_keys:
+                    computed_direction = self.DIR_W
+                    self.change_direction(computed_direction, sprinting)
+        else:
+            if Keys.D in pressed_keys and Keys.A not in pressed_keys:
+                computed_direction = self.DIR_E
+                self.change_direction(computed_direction, sprinting)
+            if Keys.A in pressed_keys and Keys.D not in pressed_keys:
+                computed_direction = self.DIR_W
+                self.change_direction(computed_direction, sprinting)
 
         if Keys.W in newly_pressed_keys:
             computed_direction = self.DIR_N
