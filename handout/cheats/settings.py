@@ -46,7 +46,7 @@ class ExtraSettings(Form):
     )
 
     fast_replay = BooleanField(
-        default=False,
+        default=True,
         label="Fast replay",
         description="Enable it only for standalone",
     )
