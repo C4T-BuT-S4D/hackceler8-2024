@@ -78,7 +78,7 @@ pub fn dodge_search(
     if !next.player.dead && !is_fatal(&acts, &settings, next, &static_states) {
         return (cur_move, shift_pressed);
     }
-    let valid: Vec<_> = acts
+    let mut valid: Vec<_> = acts
         .par_iter()
         .filter(|&&act| {
             if act == cur_act {
@@ -88,6 +88,7 @@ pub fn dodge_search(
             return !next.player.dead && !is_fatal(&acts, &settings, next, &static_states);
         })
         .collect();
+    valid.sort_by_key(|act| act.mov.is_up());
     return valid
         .first()
         .map(|opt| (opt.mov, opt.shift))

@@ -1135,7 +1135,7 @@ class Hackceler8(gfx.Window):
             deadly_objects_type["Portal"] = search.ObjectType.Portal()
 
         allowed_damage_objects_type = set()
-        if cheat_settings["allow_damage"]:
+        if cheat_settings["allow_damage"] and not enable_proj:
             allowed_damage_objects_type = {"Ouch", "SpikeOuch"}
         else:
             deadly_objects_type["Ouch"] = search.ObjectType.Ouch()
