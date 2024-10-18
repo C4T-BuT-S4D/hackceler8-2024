@@ -15,7 +15,6 @@
 from game.engine import hitbox
 from game.components.npc.npc import Npc
 
-
 class TrappedNpc(Npc):
 
     def __init__(self, tileset_path, text, stars, **kwargs):
@@ -46,6 +45,16 @@ class Quackington(TrappedNpc):
         coords = kwargs['coords']
         rect = hitbox.Rectangle(coords.x - 36, coords.x + 36, coords.y - 31, coords.y + 37)
         self.update_hitbox(rect)
+
+    def dialogue(self):
+        if self.game.painting_system is None:
+            self.game.display_textbox("Get the pencil and draw something for me, quack.")
+            return
+        output = self.game.painting_system.execute()
+        if output == "pi3t_1s_34zy":
+            super().dialogue()
+        else:
+            self.game.display_textbox("You lose!")
 
 
 class Jessse(TrappedNpc):

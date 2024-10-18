@@ -29,6 +29,8 @@ class ProjectileSystem:
         self.weapons = []
         for o in weapon_objs:
             w = weapon_parser.parse_weapon(o, o["coords"])
+            usage_limit = o.get("usage_limit", None)
+            w.usage_limit = usage_limit
             if w is not None:
                 self.weapons.append(w)
         # These are objects that can collide with projectiles, can be items or NPCs /
@@ -100,6 +102,7 @@ class ProjectileSystem:
         new_wep = weapon_parser.parse_weapon(
             {"type": wep.name}, Point(wep.x, wep.y))
         new_wep.cool_down_timer = wep.cool_down_timer
+        new_wep.usage_limit = wep.usage_limit
         new_wep.player = wep.player
         return new_wep
 
@@ -154,4 +157,6 @@ class ProjectileSystem:
         return p.base_damage
 
     def _check_collision(self, p):
+        if self.game.has_item("passthru") and p.origin != "player":
+            return
         return self.game.physics_engine.check_collision_by_type(p, ['Wall'])

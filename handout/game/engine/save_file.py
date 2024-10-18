@@ -17,6 +17,7 @@ import os
 import time
 
 from game.components.items import load_items_from_save, display_to_name, check_item_loaded
+from game.components.key_gate import KeyGate
 
 
 class SaveFile:
@@ -37,6 +38,7 @@ class SaveFile:
         'flags': game.match_flags.dump(),
         'items': [i.dump() for i in game.items],
         'coins': len([i for i in game.items if i.name.startswith("coin_")]),
+        'gates': KeyGate.gate_states,
         'stars_for_boss': game.match_flags.stars_for_boss,
         'save_time': time.time(),
         'win_time': game.win_timestamp,
@@ -50,7 +52,7 @@ class SaveFile:
     with open(self.filename) as sf:
       current_save = sf.read()
     payload = json.loads(current_save)
-    for k in ['version', 'flags', 'coins', 'items', 'stars_for_boss', 'win_time', 'save_time']:
+    for k in ['version', 'flags', 'coins', 'gates', 'stars_for_boss', 'items', 'win_time', 'save_time']:
       if k not in payload:
         logging.critical(f'Missing property {k} in save file')
         return None
@@ -72,5 +74,7 @@ def apply_save_state(state, game):
         game.match_flags.obtain_flag(f["name"], f["collected_time"])
   if "items" in state:
     game.items = load_items_from_save(state["items"])
+  if "gates" in state:
+    KeyGate.gate_states = state["gates"]
   if "win_timestamp" in state:
     game.win_timestamp = state["win_timestamp"]

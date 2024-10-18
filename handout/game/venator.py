@@ -35,6 +35,7 @@ from game.components.inventory import Inventory
 from game.components.items import Item, check_item_loaded
 from game.components.player import Player
 from game.components.stateful import StatefulObject
+from game.components.key_gate import KeyGate
 from game.engine import physics
 from game.engine.arcade_system.arcade_system import ArcadeSystem
 from game.engine.generics import GenericObject
@@ -310,7 +311,9 @@ class Venator:
                 self.player.game = self
 
             elif o.nametype == "Item":
-                if not check_item_loaded(self.items, o):
+                if o.name == "key" and False in KeyGate.gate_states.values():
+                    logging.info(f"Key already inserted into gate")
+                elif not check_item_loaded(self.items, o):
                     self.objects.append(o)
                 else:
                     logging.info(f"Duplicate object {o.nametype, o.name} detected")

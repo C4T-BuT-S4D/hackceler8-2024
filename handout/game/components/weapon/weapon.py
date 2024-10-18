@@ -41,6 +41,7 @@ class Weapon(generics.GenericObject):
         self.display_name = display_name
         self.cool_down_timer = 0
         self.charging = False
+        self.usage_count = 0
 
         # The player can only use (equip) one weapon at a time
         self.equipped = False
@@ -57,12 +58,18 @@ class Weapon(generics.GenericObject):
         self.move_to_player()
         if not self.player.dead and not self.player.immobilized:
             if Keys.SPACE in newly_pressed_keys:
-                return self.fire(tics, self.player.face_towards)
+                proj = self.fire(tics, self.player.face_towards)
+                if proj is not None:
+                    self._increase_usage()
+                return proj
             if Keys.SPACE in pressed_keys:
                 self.charge()
                 return None
             if self.charging and Keys.SPACE not in pressed_keys:
-                return self.release_charged_shot()
+                proj = self.release_charged_shot()
+                if proj is not None:
+                    self._increase_usage()
+                return proj
 
     def move_to_player(self):
         self.place_at(self.player.x, self.player.y)
@@ -94,3 +101,10 @@ class Weapon(generics.GenericObject):
 
     def release_charged_shot(self):
         return None  # Overridden by chargeable sub-classes.
+
+    def _increase_usage(self):
+        if self.usage_limit is None:
+            return
+        self.usage_count += 1
+        if self.usage_count >= self.usage_limit:
+            self.player.weapons.remove(self)

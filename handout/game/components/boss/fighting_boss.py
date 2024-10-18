@@ -22,7 +22,7 @@ from game.engine import hitbox
 import game.components.boss.implementation
 
 MARGIN = 50
-BOSS_TITLE = 'villAIn Mk.I "Example Boss"'
+BOSS_TITLE = 'Fuego Mk.I: Explosions'
 MAX_HEALTH = 500
 HEALTHBAR_LEN = 1240
 

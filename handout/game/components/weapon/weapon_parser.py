@@ -29,7 +29,9 @@ weapon_types = {"gun": gun.Gun,
                 "green_gun": gun.GreenGun,
                 "cannon": cannon.Cannon,
                 "pencil": pencil.Pencil,
-                "poison": poison.Poison
+                "poison": poison.Poison,
+                "dgun": gun.DGun,
+                "dcannon": cannon.DCannon
                 }
 
 
