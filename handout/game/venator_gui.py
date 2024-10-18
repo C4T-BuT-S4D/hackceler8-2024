@@ -307,7 +307,8 @@ class Hackceler8(gfx.Window):
             Keys.NUMBER_8,
             Keys.NUMBER_9,
         } and modifiers.alt:
-            macros = get_settings()["macros"]
+            settings = get_settings()
+            macros = settings["macros"]
 
             macro_index = ord(k.value[0]) - ord(Keys.NUMBER_1.value[0])
             if macro_index < 0 or macro_index >= len(macros):
@@ -341,7 +342,7 @@ class Hackceler8(gfx.Window):
                 else:
                     logging.error(f'bad macro (not str or dict) "{macro_tick}"')
                     return
-                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=False, text_input=text_input))
+                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=settings["macros_force_keys"], text_input=text_input))
 
             logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)

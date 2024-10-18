@@ -45,6 +45,12 @@ class ExtraSettings(Form):
         description="Cancel applying ticks on key pressed",
     )
 
+    macros_force_keys = BooleanField(
+        default=False,
+        label="Macros force keys",
+        description="Enable force keys for macros",
+    )
+
     fast_replay = BooleanField(
         default=False,
         label="Fast replay",
@@ -152,6 +158,7 @@ class SettingsDict(TypedDict):
     recording_filename: str
     macros: list[Macro]
     cancel_applying_ticks_on_key_pressed: bool
+    macros_force_keys: bool
     fast_replay: bool
     exact_track_objects: set[str]
 
