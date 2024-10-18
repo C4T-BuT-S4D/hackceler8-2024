@@ -157,6 +157,9 @@ class ProjectileSystem:
         return p.base_damage
 
     def _check_collision(self, p):
-        if self.game.has_item("passthru") and p.origin != "player":
+        # if self.game.has_item("passthru") and p.origin != "player":
+        #     return
+        if p.origin != "player":
             return
+
         return self.game.physics_engine.check_collision_by_type(p, ['Wall'])
