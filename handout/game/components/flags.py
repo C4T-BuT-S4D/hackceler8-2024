@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import codecs
 import logging
 import struct
 import time
@@ -85,6 +86,9 @@ class Flags:
         return [{"name": f.name, "stars": f.stars, "collected_time": f.collected_time} for f in self.flags]
 
 
+def _sc(s: str) -> str:
+    return codecs.encode(s, 'rot_13')
+
 # Load the flags for this match based on the NPCs and bosses present on the maps.
 def load_match_flags():
     stars_for_boss = 100000
@@ -92,48 +96,21 @@ def load_match_flags():
     for path in ["resources/levels", "resources/maps"]:
         for root, dirs, files in os.walk(path, topdown=True):
             for f in files:
-                if not f.endswith(".h8m"):
+                if not f.endswith(".h9m"):
                     continue
-                with open(Path(os.path.join(root, f)), "rb") as mf:
-                    # Skip to objects.
-                    mf.seek(8, 0)
-                    for i in range(struct.unpack("<H", mf.read(2))[0]):
-                        _ = read_str(mf)
-                        mf.seek(2, 1)
-                    for i in range(struct.unpack("<H", mf.read(2))[0]):
-                        _ = read_str(mf)
-                        h = struct.unpack("<H", mf.read(2))[0]
-                        w = struct.unpack("<H", mf.read(2))[0]
-                        mf.seek(1, 1)
-                        mf.seek(2 * h * w, 1)
-                    for i in range(struct.unpack("<H", mf.read(2))[0]):
-                        name = stars = stars_needed = None
-                        for j in range(struct.unpack("<H", mf.read(2))[0]):
-                            key = read_str(mf)
-                            match mf.read(1):
-                                case b'\x00':
-                                    val = read_str(mf)
-                                case b'\x01':
-                                    val = struct.unpack("?", mf.read(1))[0]
-                                case b'\x02':
-                                    val = struct.unpack("<i", mf.read(4))[0]
-                                case b'\x03':
-                                    val = struct.unpack("<f", mf.read(4))[0]
-                                case _:
-                                    logging.error(f"Invalid val type")
-                                    return None
-                            if key == "name":
-                                name = val
-                            elif key == "stars":
-                                stars = val
-                            elif key == "stars_needed":
-                                stars_needed = val
+                with open(Path(os.path.join(root, f)), "r") as mf:
+                    content = mf.read()
+                j = json.loads(content)
+                for o in j[_sc("objects")]:
+                    if _sc("name") in o:
+                        name = _sc(o[_sc("name")])
                         # Freeable NPCs
                         if name.startswith("trapped_") and name.endswith("_npc"):
-                            flags.append(Flag(name, name.removeprefix("trapped_").removesuffix("_npc"), stars))
+                            flags.append(Flag(name, name.removeprefix("trapped_").removesuffix("_npc"), o[_sc("stars")]))
                         # Bosses
                         if name.endswith("_boss_gate"):
                             name = name
                             flags.append(Flag(name, name.removesuffix("_gate"), 9999))
-                            stars_for_boss = min(stars_for_boss, stars_needed)
+                            stars_for_boss = min(stars_for_boss, o[_sc("stars_needed")])
+
     return Flags(flags, stars_for_boss)

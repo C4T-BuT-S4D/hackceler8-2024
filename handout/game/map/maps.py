@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from enum import Enum
 from typing import NamedTuple, Optional
 
@@ -45,19 +44,21 @@ class MapAttrs(NamedTuple):
 
 
 def load() -> dict[str, MapAttrs]:
-  base_tilemap = tilemap.TileMap("resources/levels/base/base_level.h8m")
+  base_tilemap = tilemap.TileMap("resources/levels/base/base_level.h9m")
 
-  beach_tilemap = tilemap.TileMap("resources/levels/beach/beach_lvl.h8m")
+  beach_tilemap = tilemap.TileMap("resources/levels/beach/beach_lvl.h9m")
 
-  ruins_tilemap = tilemap.TileMap("resources/levels/ruins/ruins_lvl.h8m")
+  ruins_tilemap = tilemap.TileMap("resources/levels/ruins/ruins_lvl.h9m")
 
-  cloud_tilemap = tilemap.TileMap("resources/levels/cloud/cloud_lvl.h8m")
+  cloud_tilemap = tilemap.TileMap("resources/levels/cloud/cloud_lvl.h9m")
 
-  ocean_tilemap = tilemap.TileMap("resources/levels/ocean/ocean_lvl.h8m")
+  ocean_tilemap = tilemap.TileMap("resources/levels/ocean/ocean_lvl.h9m")
 
-  dialogue_boss_tilemap = tilemap.TileMap("resources/levels/boss/dialogue_boss.h8m")
+  dialogue_boss_tilemap = tilemap.TileMap("resources/levels/boss/dialogue_boss.h9m")
 
-  fighting_boss_tilemap = tilemap.TileMap("resources/levels/boss/fighting_boss.h8m")
+  fighting_boss_tilemap = tilemap.TileMap("resources/levels/boss/fighting_boss.h9m")
+
+  maze_tilemap = tilemap.TileMap("resources/levels/maze/maze_lvl.h9m")
 
   maps_dict = {
       "base": MapAttrs(base_tilemap),
@@ -65,6 +66,7 @@ def load() -> dict[str, MapAttrs]:
       "ruins": MapAttrs(ruins_tilemap),
       "cloud": MapAttrs(cloud_tilemap),
       "ocean": MapAttrs(ocean_tilemap),
+      "maze": MapAttrs(maze_tilemap),
       "dialogue_boss": MapAttrs(dialogue_boss_tilemap),
       "fighting_boss": MapAttrs(fighting_boss_tilemap),
   }

@@ -72,6 +72,8 @@ class Weapon(generics.GenericObject):
             self.sprite.set_flipped(False)
 
     def fireball(self, speed_x, size=1):
+        if self.player is not None and self.player.game.has_item("slow_bullet"):
+            speed_x *= 0.5
         return Projectile(
             coords=Point(self.x, self.y + size * 4),
             speed_x=speed_x,

@@ -659,6 +659,10 @@ class Hackceler8(gfx.Window):
                 case "Boss":
                     # cloudy sky blue
                     color = (135, 206, 235, 255)
+                case "gem":
+                    pass
+                case "atm":
+                    pass
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
