@@ -211,6 +211,9 @@ def run_cheats_server(port: int) -> threading.Thread:
         if request.method == "POST":
             update_settings(lambda s: s.update(recording_filename=chosen_recording))
 
+            with open(os.path.join(os.path.dirname(__file__), "recording_filename.txt"), "w") as f:
+                f.write(chosen_recording)
+
             logging.info(f"Set chosen recording to {chosen_recording}")
             return redirect(url_for("recordings", **request.args))
 
