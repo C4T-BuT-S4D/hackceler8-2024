@@ -316,6 +316,7 @@ class Hackceler8(gfx.Window):
                 return
 
             try:
+                force_keys = macros[macro_index].force_keys
                 macro = eval(macros[macro_index].keys)
             except Exception as e:
                 logging.error(f'bad macro "{macros[macro_index].name}" (eval error): {e}')
@@ -342,7 +343,7 @@ class Hackceler8(gfx.Window):
                 else:
                     logging.error(f'bad macro (not str or dict) "{macro_tick}"')
                     return
-                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=settings["macros_force_keys"], text_input=text_input))
+                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=force_keys, text_input=text_input))
 
             logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)

@@ -119,11 +119,12 @@ def run_cheats_server(port: int) -> threading.Thread:
             macro = all_macros[chosen_macro]
             macro.name = request.form.get("name")
             macro.keys = request.form.get("keys")
+            macro.force_keys = request.form.get("force_keys") == "on"
 
             update_settings(lambda s: s.update(macros=all_macros))
 
             with open(os.path.join(os.path.dirname(__file__), "macros.json"), "w") as f:
-                json.dump([json.dumps({"name": macro.name, "keys": macro.keys}) for macro in all_macros], f)
+                json.dump([json.dumps({"name": macro.name, "keys": macro.keys, "force_keys": macro.force_keys}) for macro in all_macros], f)
 
             return redirect(url_for("macros", macro=chosen_macro))
 

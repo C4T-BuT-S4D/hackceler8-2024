@@ -45,12 +45,6 @@ class ExtraSettings(Form):
         description="Cancel applying ticks on key pressed",
     )
 
-    macros_force_keys = BooleanField(
-        default=False,
-        label="Macros force keys",
-        description="Enable force keys for macros",
-    )
-
     fast_replay = BooleanField(
         default=False,
         label="Fast replay",
@@ -158,7 +152,6 @@ class SettingsDict(TypedDict):
     recording_filename: str
     macros: list[Macro]
     cancel_applying_ticks_on_key_pressed: bool
-    macros_force_keys: bool
     fast_replay: bool
     exact_track_objects: set[str]
 
@@ -168,7 +161,7 @@ settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]
 __lock: RLock = RLock()
 __settings: SettingsDict = {
     "recording_filename": None,
-    "macros": [Macro(name=f"Macro {i + 1}", keys="") for i in range(9)],
+    "macros": [Macro(name=f"Macro {i + 1}", keys="", force_keys=False) for i in range(9)],
     "exact_track_objects": set() # Enabled via overview
 }
 
