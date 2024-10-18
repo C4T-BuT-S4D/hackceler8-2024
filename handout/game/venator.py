@@ -629,6 +629,8 @@ class Venator:
             self.save_file.save(self)
 
     def has_item(self, name_substr: str) -> bool:
+        if name_substr == "forgetful":
+            return True
         return any(name_substr in i.name for i in self.items)
 
     def free_npc(self, npc, stars: int):

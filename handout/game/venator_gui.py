@@ -570,6 +570,10 @@ class Hackceler8(gfx.Window):
             if self.game.player.prev_y == self.game.player.y:
                 self.game.raw_pressed_keys.add(Keys.W)
 
+        if self.game.player and self.game.player.forget_timer >= 30:
+            self.game.raw_pressed_keys.discard(Keys.A)
+            self.game.raw_pressed_keys.discard(Keys.D)
+
         saved_map = self.game.current_map
         was_player_dead = self.game.player and self.game.player.dead
         self.game.tick()
