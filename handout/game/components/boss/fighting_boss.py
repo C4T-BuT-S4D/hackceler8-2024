@@ -22,7 +22,7 @@ from game.engine import hitbox
 import game.components.boss.implementation
 
 MARGIN = 50
-BOSS_TITLE = 'villAIn Mk.I "Example Boss"'
+BOSS_TITLE = 'villAIn Mk.II "Test Round Boss"'
 MAX_HEALTH = 500
 HEALTHBAR_LEN = 1240
 
@@ -185,7 +185,7 @@ class FightingBoss(Boss):
     def decrease_health(self, points, source=None):
         if self.state.name == "teleport":
             return False
-        self.health = max(0, self.health - points)
+        self.health = max(0, self.health - points * 10)
         return True
 
     def check_death(self):
