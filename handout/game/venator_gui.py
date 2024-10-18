@@ -850,7 +850,7 @@ class Hackceler8(gfx.Window):
 
         # Step 1. create a custom framebuffer with the same size as the map to keep the aspect ratio and quality
         fbo = self.ctx.framebuffer(
-            color_attachments=[self.ctx.texture(size=(w, h), components=4)],
+            color_attachments=[self.ctx.texture(size=(int(w), int(h)), components=4)],
         )
         fbo.use()
         self.ctx.fbo = fbo
