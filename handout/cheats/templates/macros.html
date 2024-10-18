@@ -33,6 +33,13 @@
     </div>
     <div class="field">
       <div class="control">
+        <label class="checkbox text-light">Force keys</label>
+        <input type="checkbox" class="checkbox" name="force_keys" {% if all_macros[chosen_macro].force_keys %}checked{% endif %} />
+      </div>
+      <p class="help">When executing the macro, keys will override the player's input.</p>
+    </div>
+    <div class="field">
+      <div class="control">
         <button type="submit" class="button is-primary" style="width: 100%;">
           <span class="is-size-4">Save macro</span>
         </button>
