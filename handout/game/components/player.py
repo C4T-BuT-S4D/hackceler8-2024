@@ -87,13 +87,8 @@ class Player(generics.GenericObject):
         if self.scroller_mode:
             self.can_jump = True
             return
-        self.can_jump = False
-        self.move(0, -1)
-        _, collisions_y, _ = self.game.physics_engine._get_collisions_list(self)
-        for _, mpv in collisions_y:
-            if mpv.y > 0:
-                self.can_jump = True
-        self.move(0, 1)
+        anim = self.sprite.get_animation()
+        self.can_jump = (anim != "jump-up" and anim != "jump-down")
 
     def melee(self, pressed_keys, newly_pressed_keys):
         if self.dead or self.immobilized:
@@ -132,7 +127,9 @@ class Player(generics.GenericObject):
         super().tick()
 
     def update_stamina(self, pressed_keys):
-        if self.running or (Keys.LSHIFT in pressed_keys):
+        a = self.sprite.get_animation()
+        if a == "run" or a == "jump-up" or a == "jump-down":
+            self.stamina = max(0, self.stamina - 0.5)
             return
         if self.stamina < 100:
             self.stamina = min(self.stamina + 0.5, 100)
@@ -185,7 +182,6 @@ class Player(generics.GenericObject):
             if sprinting:
                 speed_multiplier = self.speed_multiplier
                 self.running = True
-                self.stamina = max(0, self.stamina - 0.5)
 
         if self.direction == self.DIR_E or self.direction == self.DIR_W:
             self.face_towards = direction

@@ -4,7 +4,7 @@
 
 1. Install prerequisites
 ```
-cd handout
+cd hackceler8-2024-game
 python3 -m venv my_venv
 source my_venv/bin/activate
 pip3 install -r requirements.txt
@@ -13,17 +13,15 @@ pip3 install -r requirements.txt
 2. Run server (optional but good for testing cheat detection/etc.)
 
 ```
-cd handout
+cd hackceler8-2024-game
 source my_venv/bin/activate
 python3 server.py
 ```
 
-Note that this server is slightly different from the one run by organizers during the live rounds as it doesn't have all the code for the boss fights.
-
 3. Run client
 
 ```
-cd handout
+cd hackceler8-2024-game
 source my_venv/bin/activate
 python3 client.py
 ```

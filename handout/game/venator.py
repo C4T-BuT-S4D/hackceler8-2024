@@ -336,7 +336,8 @@ class Venator:
 
         self.physics_engine = physics.PhysicsEngine(self, objects=[self.player] + self.objects)
         self.physics_engine.env_tiles = self.tiled_map.env_tiles
-        self.level_modifier = Venatizer(self.tiled_map)
+        if self.current_map == 'ocean':
+            self.level_modifier = Venatizer(self)
 
     def switch_maps(self, new_map):
         curr_map = self.current_map
@@ -550,6 +551,10 @@ class Venator:
         for o in list(self.objects):
             o.game = self
             o.tick()
+            if not self.player.dead and o.name == "killawall" and o.collides(self.player):
+                self.player.decrease_health(1000, "killawall")
+                self.player.sprite.set_flashing(True)
+                self.level_modifier = None
 
         for projectile in self.projectile_system.active_projectiles:
             projectile.tick()

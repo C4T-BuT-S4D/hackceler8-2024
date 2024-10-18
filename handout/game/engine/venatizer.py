@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-
+from game.components.wall import Wall
 
 class FakeSize:
 
@@ -30,15 +30,27 @@ class FakeCoord:
 
 class Venatizer:
 
-  def __init__(self, map):
-    self.map = map
-    self.max_x = map.size.width
-    self.max_y = map.size.height
+  def __init__(self, game):
+    self.game = game
+    self.map = self.game.tiled_map
+    self.max_x = self.map.size.width
+    self.max_y = self.map.size.height
 
     self.counter = 0
     # How many tiles per second are being nuked
-    self.advancement_speed = 60
+    self.advancement_speed = 5
     self.wall_width = self.map.tile_size.width
 
   def tick(self):
+    w = Wall(
+      coords=FakeCoord(self.counter // self.advancement_speed * self.wall_width,
+                       10000),
+             x1=self.counter // self.advancement_speed * self.wall_width,
+      x2=self.counter // self.advancement_speed * self.wall_width + self.wall_width,
+      y1=0,
+      y2=10000,
+             name="killawall")
+
+    self.game.objects.append(w)
+    self.counter += 1
     return
