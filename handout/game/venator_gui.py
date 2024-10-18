@@ -745,25 +745,25 @@ class Hackceler8(gfx.Window):
                         gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
                                  x, y, color=color)
 
-                    if o.nametype == "Boss" and o.name == "fighting_boss":
-                        state = o.state
-                        text = f"st={state.slash_timer}"
+                if o.nametype == "Boss" and o.name == "fighting_boss":
+                    state = o.state
+                    text = f"st={state.slash_timer}"
 
-                        gfx.draw_txt(f"debug_boss_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
-                                     o.x1, o.y1, color=color)
-                        
-                        if sb := state.slashbox_left:
-                            # left is purple
-                            sb_color = (255, 0, 255, 255)
-                            objs.append(gfx.lrtb_rectangle_outline(
-                                sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
-                            ))
-                        if sb := state.slashbox_right:
-                            # right is green
-                            sb_color = (0, 255, 0, 255)
-                            objs.append(gfx.lrtb_rectangle_outline(
-                                sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
-                            ))
+                    gfx.draw_txt(f"debug_boss_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
+                                    o.x1, o.y1, color=color)
+                    
+                    if sb := state.slashbox_left:
+                        # left is purple
+                        sb_color = (255, 0, 255, 255)
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
+                        ))
+                    if sb := state.slashbox_right:
+                        # right is green
+                        sb_color = (0, 255, 0, 255)
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
+                        ))
 
                 if cheats_settings["draw_lines"] and o.nametype in {"Item"}:
                     if o.nametype == "Item":
