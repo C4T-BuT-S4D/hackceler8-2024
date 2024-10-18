@@ -673,7 +673,7 @@ class Hackceler8(gfx.Window):
                 case "gem":
                     pass
                 case "atm":
-                    pass
+                    color = (204, 255, 0, 255)
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
@@ -742,6 +742,8 @@ class Hackceler8(gfx.Window):
                         text += f" to {o.map_name}"
                     elif o.nametype == "BossGate":
                         text += f" for {o.stars_needed} stars"
+                    elif o.nametype == "atm":
+                        text += f" | {o.reward_type} | {o.gems_needed} gems"
 
                     if name := getattr(o, "name", None):
                         text += f" | {name}"
