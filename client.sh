@@ -20,8 +20,10 @@ else
 fi
 
 pushd ../cheats-rust/search
-maturin build --profile opt -i $(which python3)
-pip install --force-reinstall ../target/wheels/*
+if [ ! -d "../target" ]; then
+    maturin build --profile opt -i $(which python3)
+    pip install --force-reinstall ../target/wheels/*
+fi
 popd
 
 if [ "$1" = "local" ]; then
