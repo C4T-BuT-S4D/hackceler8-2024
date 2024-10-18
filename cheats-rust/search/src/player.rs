@@ -14,6 +14,8 @@ pub struct PlayerState {
     pub y: f64,
 
     #[pyo3(get, set)]
+    pub prev_y: f64,
+
     pub vx: f64,
     #[pyo3(get, set)]
     pub vy: f64,
@@ -55,7 +57,7 @@ impl PlayerState {
     pub fn new(
         x: f64,
         y: f64,
-        
+
         vx: f64,
         vy: f64,
         
@@ -75,6 +77,7 @@ impl PlayerState {
         PlayerState {
             x,
             y,
+            prev_y: y,
             vx,
             vy,
             base_vx,
@@ -112,6 +115,7 @@ impl PlayerState {
     }
 
     pub fn update_position(&mut self) {
+        self.prev_y = self.y;
         if self.vx != 0.0 || self.vy != 0.0 {
             self.move_by(self.vx, self.vy);
         }

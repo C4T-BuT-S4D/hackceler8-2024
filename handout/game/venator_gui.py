@@ -91,6 +91,8 @@ class Hackceler8(gfx.Window):
         self.projected_width = 0
         self.projected_height = 0
 
+        self.endless_jumping = False
+
     def setup_game(self):
         self.game = Venator(self.net, is_server=False, extra_items=self.extra_items)
 
@@ -295,6 +297,11 @@ class Hackceler8(gfx.Window):
 
     def on_key_press(self, symbol: int, modifiers: KeyModifiers):
         k = Keys.from_ui(symbol)
+
+        if k == Keys.T and modifiers.ctrl:
+            self.endless_jumping = not self.endless_jumping
+            logging.info(f"endless jumping: {self.endless_jumping}")
+            return
 
         if k in {
             Keys.NUMBER_1,
@@ -558,6 +565,10 @@ class Hackceler8(gfx.Window):
                 if ret != (move, shift):
                     print('DODGE VIA', (move, shift), 'TO', ret)
                     self.game.raw_pressed_keys = set(search_move_to_keys(ret[0], ret[1]))
+
+        if self.endless_jumping:
+            if self.game.player.prev_y == self.game.player.y:
+                self.game.raw_pressed_keys.add(Keys.W)
 
         saved_map = self.game.current_map
         was_player_dead = self.game.player and self.game.player.dead

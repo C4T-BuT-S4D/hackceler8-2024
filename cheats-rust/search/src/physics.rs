@@ -172,9 +172,10 @@ impl PhysState {
             return;
         }
 
-        self.player.move_by(0.0, -1.0);
-        self.player.can_jump = self.player_can_jump(state, &self.player.get_hitbox());
-        self.player.move_by(0.0, 1.0);
+        self.player.can_jump = self.player.prev_y == self.player.y;
+        // self.player.move_by(0.0, -1.0);
+        // self.player.can_jump = self.player_can_jump(state, &self.player.get_hitbox());
+        // self.player.move_by(0.0, 1.0);
     }
 
     fn player_tick(&mut self, state: &StaticState, act: Action) {
