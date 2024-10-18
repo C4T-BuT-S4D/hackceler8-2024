@@ -654,6 +654,8 @@ class Hackceler8(gfx.Window):
                 case "Element":
                     # olive green
                     color = (107, 142, 35, 255)
+                case "Boss":
+                    continue # skip without warning
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
