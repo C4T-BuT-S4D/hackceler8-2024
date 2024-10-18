@@ -29,7 +29,7 @@ import moderngl_window as mglw
 # CBS customization imports
 from game import constants
 from cheats.server import run_cheats_server
-from cheats.settings import init_settings
+from cheats.settings import init_settings, update_settings
 
 # A silly monkeypatch to work around mglw not allowing to pass in a parent parser
 mglw._orig_create_parser = mglw.create_parser
@@ -43,6 +43,7 @@ class Hx8Client(venator_gui.Hackceler8):
         log.setup_logging(self.argv, file_prefix='client')
 
         init_settings()
+        update_settings(lambda s: s.update(fast_replay=self.argv.standalone))
         self.cheats_server_thread = run_cheats_server(self.argv.cheats_port)
 
         net = None
