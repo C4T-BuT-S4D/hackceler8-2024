@@ -65,10 +65,11 @@ class Coin:
 
 def init_coins():
     return [
-        Coin("base", 3296, 4352, "vr"),
-        Coin("beach", 5376, 288, "wj"),
-        Coin("ruins", 1072, 2128, "ru"),
-        Coin("ocean", 3824, 416, "ba"),
+        Coin("base", 544, 2720, "gp"), Coin("base", 2320, 4112, "vn"),
+        Coin("beach", 192, 400, "io"), Coin("beach", 3440, 1152, "ir"),
+        Coin("ruins", 1568, 1552, "uf"), Coin("ruins", 192, 1168, "rp"),
+        Coin("cloud", 560, 4208, "uj"), Coin("cloud", 3392, 2288, "dv"),
+        Coin("ocean", 1296, 384, "gh"), Coin("ocean", 3792, 3920, "yk")
     ]
 
 class TileMap:
