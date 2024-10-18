@@ -46,6 +46,7 @@ class KeyGate(generics.GenericObject):
             self.on = KeyGate.gate_states[self.name]
         if (self.sprite.get_animation() == "on") != self.on:
             self.sprite.set_animation("on" if self.on else "off")
+            self.game.save_file.save(self.game)
         self.blocking = self.on
 
     def _interact_rect(self):
@@ -54,8 +55,10 @@ class KeyGate(generics.GenericObject):
     def _toggle(self):
         if self.on:
             if self._has_key():
+                self._remove_key()
                 self.on = False
         else:
+            self._give_key()
             self.on = True
             if self.collides(self.game.player):
                 self.game.player.move(self.get_leftmost_point() - self.game.player.get_rightmost_point(), 0)
@@ -64,3 +67,14 @@ class KeyGate(generics.GenericObject):
 
     def _has_key(self) -> bool:
         return any([i.name == "key" for i in self.game.items])
+
+    def _remove_key(self):
+        for i in self.game.items:
+            if i.name == "key":
+                self.game.items.remove(i)
+                self.game.save_file.save(self.game)
+                return
+
+    def _give_key(self):
+        self.game.gather_item(Item(
+            coords=None, name="key", display_name="Key"))

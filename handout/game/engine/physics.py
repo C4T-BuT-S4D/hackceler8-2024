@@ -147,6 +147,8 @@ class PhysicsEngine:
             n.on_player_collision(self.player)
 
     def _detect_env_mod(self):
+        if self.game.current_map != "ocean" and self.game.current_map != "cloud":
+            return
         for t in self.env_tiles:
             if t.collides(self.player):
                 PhysicsEngine.current_mod = t.modifier
@@ -158,6 +160,8 @@ class PhysicsEngine:
     def _apply_modifier(self):
         self.jump_speed = self.og_jump_speed * PhysicsEngine.current_mod.jump_speed
         self.movement_speed = self.og_movement_speed * PhysicsEngine.current_mod.walk_speed
+        if self.player.scroller_mode:
+            self.movement_speed = 2.0 * PhysicsEngine.current_mod.walk_speed
         self.gravity = self.og_gravity * PhysicsEngine.current_mod.gravity
         self.player.base_x_speed = self.movement_speed
         self.player.base_y_speed = self.jump_speed

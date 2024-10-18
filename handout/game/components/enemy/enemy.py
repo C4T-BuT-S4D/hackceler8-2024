@@ -173,12 +173,15 @@ class Enemy(generics.GenericObject):
         angle = math.atan2(self.game.player.x - x, self.game.player.y - y)
         speed_x = 10 * math.sin(angle)
         speed_y = 10 * math.cos(angle)
+        dmg = self.damage
+        if dmg is None:
+            dmg = 20 if self.game.has_item("strong") else 10
         proj = Projectile(
             coords=Point(x, y),
             speed_x=speed_x,
             speed_y=speed_y,
             origin="AI",
-            base_damage=10 if self.damage is None else self.damage,
+            base_damage=dmg,
             img = img,
         )
         self.game.projectile_system.active_projectiles.append(proj)
@@ -187,8 +190,11 @@ class Enemy(generics.GenericObject):
         if not self.melee and self.sprite.has_animation("melee"):
             self.sprite.set_animation("melee")
         self.melee = True
-        self.modifier = modifier.HealthDamage(
-            min_distance=80, damage=1 if self.damage is None else self.damage)
+        dmg = 1 if self.damage is None else self.damage
+        if self.game.has_item("strong"):
+            if self.damage is None or (self.name == "eagle_enemy" and self.damage == 2):
+                dmg *= 2
+        self.modifier = modifier.HealthDamage(min_distance=80, damage=dmg)
 
     def _stop_melee(self):
         self.melee = False
@@ -331,7 +337,7 @@ class Octopus(Enemy):
     ):
         super().__init__(
             coords,
-            tileset_path="resources/enemies/octopus.h8t",
+            tileset_path="resources/character/Domino.h8t",
             **kwargs,
         )
         self._init_health()
@@ -350,7 +356,7 @@ class Siren(Enemy):
     ):
         super().__init__(
             coords,
-            tileset_path="resources/enemies/siren.h8t",
+            tileset_path="resources/character/Domino.h8t",
             **kwargs,
         )
         self._init_health()

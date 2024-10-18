@@ -89,3 +89,12 @@ class OrangeGun(Gun):
             display_name="Orange Gun",
             tileset_path="resources/objects/weapons/orange_gun.png",
         )
+
+class DGun(Gun):
+    def __init__(self, coords, name):
+        super().__init__(
+            coords=coords,
+            name=name,
+            display_name="Gun",
+            tileset_path="resources/character/Domino.h8t",
+        )

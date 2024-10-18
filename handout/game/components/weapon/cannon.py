@@ -20,13 +20,13 @@ from game.components.weapon.weapon import Weapon
 
 
 class Cannon(Weapon):
-    def __init__(self, coords, name):
+    def __init__(self, coords, name, tileset_path = "resources/objects/weapons/cannon.png"):
         rect = hitbox.Rectangle(coords.x - 16, coords.x + 16, coords.y - 16, coords.y + 16)
         super().__init__(
             coords=coords,
             name=name,
             display_name="Cannon",
-            tileset_path="resources/objects/weapons/cannon.png",
+            tileset_path=tileset_path,
             rect=rect,
         )
 
@@ -65,3 +65,8 @@ class Cannon(Weapon):
         if self.sprite.flipped:
             speed_x = -speed_x
         return self.fireball(speed_x, size=3)
+
+
+class DCannon(Cannon):
+    def __init__(self, coords, name):
+        super().__init__(coords, name, tileset_path="resources/character/Domino.h8t")
