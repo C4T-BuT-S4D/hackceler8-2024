@@ -203,7 +203,7 @@ class Venator:
                             f"Failed to parse save state from server: {e}")
                         continue
                     apply_save_state(_save_state, self)
-                    logging.info("Loaded save state from server")
+                    logging.info(f"Loaded save state from server: {_save_state}")
                     with self.mutex:
                         self.ready = True
                 with self.mutex:
@@ -610,6 +610,8 @@ class Venator:
             self.save_file.save(self)
 
     def has_item(self, name_substr: str) -> bool:
+        if not self.is_server and any(name_substr in item_name for item_name in self.save_file.extra_items):
+            return True
         return any(name_substr in i.name for i in self.items)
 
     def free_npc(self, npc, stars: int):

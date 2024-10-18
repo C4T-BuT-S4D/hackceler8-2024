@@ -28,6 +28,7 @@ from game.components.boss.bg import BossBG
 import time
 import secrets
 from copy import deepcopy
+from random import Random
 from cheats.settings import get_settings, update_settings
 from cheats.state import update_state, State, MapFlag, MapObject
 from cheats.lib.tick_data import TickData
@@ -41,7 +42,7 @@ class Hackceler8(gfx.Window):
     window_size = (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
     title = SCREEN_TITLE
 
-    def __init__(self, net=None, is_prerender=False, **kwargs):
+    def __init__(self, net=None, is_prerender=False, extra_items: list[str] = [], **kwargs):
         super().__init__(**kwargs)
         self.heart = gfx.GuiImage.load(self, "resources/objects/heart.png")
         self.star = gfx.GuiImage.load(self, "resources/objects/star.png")
@@ -73,6 +74,7 @@ class Hackceler8(gfx.Window):
         self.is_prerender = is_prerender
         self.playing_recording = False
         self.auto_shoot = False
+        self.extra_items = extra_items
 
         # map item name to map name
         self.object_map_mapping: dict[str, str] = {}
@@ -87,12 +89,13 @@ class Hackceler8(gfx.Window):
         self.map_overview_keys_pressed: set[Keys] = set()
 
         self.debug_objects: dict[str, list[gfx.ShapeDrawParams]] = {}
+        self.debug_unknown_object_colors: dict[str, tuple] = {}
 
         self.projected_width = 0
         self.projected_height = 0
 
     def setup_game(self):
-        self.game = Venator(self.net, is_server=False)
+        self.game = Venator(self.net, is_server=False, extra_items=self.extra_items)
 
         self._save_overview_state()
         self._build_object_map_mapping()
@@ -316,6 +319,7 @@ class Hackceler8(gfx.Window):
                 return
 
             try:
+                force_keys = macros[macro_index].force_keys
                 macro = eval(macros[macro_index].keys)
             except Exception as e:
                 logging.error(f'bad macro "{macros[macro_index].name}" (eval error): {e}')
@@ -342,7 +346,7 @@ class Hackceler8(gfx.Window):
                 else:
                     logging.error(f'bad macro (not str or dict) "{macro_tick}"')
                     return
-                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=settings["macros_force_keys"], text_input=text_input))
+                macro_ticks.append(TickData(keys=list(tick_keys), force_keys=force_keys, text_input=text_input))
 
             logging.info(f'applying macro "{macros[macro_index].name}"')
             self.ticks_to_apply.extend(macro_ticks)
@@ -659,116 +663,120 @@ class Hackceler8(gfx.Window):
                     # cloudy sky blue
                     color = (135, 206, 235, 255)
                 case _:
-                    logging.warning(f"skipped object {o.nametype}")
+                    r = Random(time.time())
+                    if o.nametype not in self.debug_unknown_object_colors:
+                        self.debug_unknown_object_colors[o.nametype] = (r.randint(0, 255), r.randint(0, 255), r.randint(0, 255), 255)
+                    color = self.debug_unknown_object_colors[o.nametype]
 
-            if color:
-                if cheats_settings["draw_hitboxes"]:
-                    # don't draw portal hitboxes, they are already outlined
-                    if o.nametype != "Portal":
-                        objs.append(gfx.lrtb_rectangle_outline(
-                            o.x1,
-                            o.x2,
-                            o.y2,
-                            o.y1,
-                            color,
-                            border=cheats_settings["object_hitbox"],
-                        ))
-                    else:
-                        # draw line to o.dest
-                        objs.append(gfx.line(o.x, o.y, o.dest.x, o.dest.y, color))
+            if cheats_settings["draw_hitboxes"]:
+                # don't draw portal hitboxes, they are already outlined
+                if o.nametype != "Portal":
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        o.x1,
+                        o.x2,
+                        o.y2,
+                        o.y1,
+                        color,
+                        border=cheats_settings["object_hitbox"],
+                    ))
+                else:
+                    # draw line to o.dest
+                    objs.append(gfx.line(o.x, o.y, o.dest.x, o.dest.y, color))
 
-                    # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
-                    if o.nametype == "Enemy" and o.can_melee:
-                        dist = o.melee_range
-                        objs.append(gfx.lrtb_rectangle_outline(
-                            o.x - dist,
-                            o.x + dist,
-                            o.y + dist,
-                            o.y - dist,
-                            (255, 100, 0, 255),
-                            border=cheats_settings["object_hitbox"]
-                        ))
+                # melee is handled using the HealthDamage modifier, but we want to display the melee range separately
+                if o.nametype == "Enemy" and o.can_melee:
+                    dist = o.melee_range
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        o.x - dist,
+                        o.x + dist,
+                        o.y + dist,
+                        o.y - dist,
+                        (255, 100, 0, 255),
+                        border=cheats_settings["object_hitbox"]
+                    ))
 
-                        # this is hardcoded in code, update it if changed
-                        modifier_dist = 80
-                        objs.append(gfx.circle_outline(
-                            o.x,
-                            o.y,
-                            modifier_dist,
-                            (255, 255, 0, 255),
-                            border_width=cheats_settings["object_hitbox"]
-                        ))
-                    elif (modifier := getattr(o, "modifier", None)) and (min_dist := getattr(modifier, "min_distance", None)) and min_dist > 0:
-                        objs.append(gfx.circle_outline(
-                            o.x,
-                            o.y,
-                            min_dist,
-                            (255, 255, 0, 255),
-                            border_width=cheats_settings["object_hitbox"]
-                        ))
+                    # this is hardcoded in code, update it if changed
+                    modifier_dist = 80
+                    objs.append(gfx.circle_outline(
+                        o.x,
+                        o.y,
+                        modifier_dist,
+                        (255, 255, 0, 255),
+                        border_width=cheats_settings["object_hitbox"]
+                    ))
+                elif (modifier := getattr(o, "modifier", None)) and (min_dist := getattr(modifier, "min_distance", None)) and min_dist > 0:
+                    objs.append(gfx.circle_outline(
+                        o.x,
+                        o.y,
+                        min_dist,
+                        (255, 255, 0, 255),
+                        border_width=cheats_settings["object_hitbox"]
+                    ))
 
-                    if o.nametype == "Player":
-                        # Draw a point at the player's position
-                        objs.append(gfx.lrtb_rectangle_outline(
-                            self.game.player.x,
-                            self.game.player.x,
-                            self.game.player.y,
-                            self.game.player.y,
-                            color,
-                            border=cheats_settings["object_hitbox"]
-                        ))
+                if o.nametype == "Player":
+                    # Draw a point at the player's position
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        self.game.player.x,
+                        self.game.player.x,
+                        self.game.player.y,
+                        self.game.player.y,
+                        color,
+                        border=cheats_settings["object_hitbox"]
+                    ))
 
-                if cheats_settings["draw_names"] and o.nametype not in {"Wall"}:
-                    text = f"{o.nametype}"
+            if cheats_settings["draw_names"] and o.nametype not in {"Wall"}:
+                text = f"{o.nametype}"
 
-                    # type-specific info
-                    if o.nametype == "warp":
-                        text += f" to {o.map_name}"
-                    elif o.nametype == "BossGate":
-                        text += f" for {o.stars_needed} stars"
+                # type-specific info
+                if o.nametype == "warp":
+                    text += f" to {o.map_name}"
+                elif o.nametype == "BossGate":
+                    text += f" for {o.stars_needed} stars"
+                elif o.nametype == "atm":
+                    text += f" | {o.reward_type} | {o.gems_needed} gems"
 
-                    if name := getattr(o, "name", None):
-                        text += f" | {name}"
-                    if (health := getattr(o, "health", None)) and o.nametype not in {
-                        "warp", "Element", "Portal", "Weapon", "ArcadeBox", "KeyGate", "BossGate",
-                        "Ouch", "Fire", "Item", "NPC",
-                    }:
-                        text += f" | {health:.02f}"
-                    if o.nametype == "Enemy" and o.can_shoot:
-                        text += f" | st={o.shoot_timer}"
-                    if o.nametype == "Element":
-                        text += f" | js={o.modifier.jump_speed} g={o.modifier.gravity} ws={o.modifier.walk_speed} jo={o.modifier.jump_override}"
+                if name := getattr(o, "name", None):
+                    text += f" | {name}"
+                if (health := getattr(o, "health", None)) and o.nametype not in {
+                    "warp", "Element", "Portal", "Weapon", "ArcadeBox", "KeyGate", "BossGate",
+                    "Ouch", "Fire", "Item", "NPC",
+                }:
+                    text += f" | {health:.02f}"
+                if o.nametype == "Enemy" and o.can_shoot:
+                    text += f" | st={o.shoot_timer}"
+                if o.nametype == "Element":
+                    text += f" | js={o.modifier.jump_speed} g={o.modifier.gravity} ws={o.modifier.walk_speed} jo={o.modifier.jump_override}"
 
-                    x = (o.x1 - self.camera.position.x) / self.camera.scale
-                    y = (self.camera.position.y - o.y2) / self.camera.scale - self.debug_labels_font_size * 2
-                    if x >= 0 and y <= 0 and x <= self.camera.viewport_width and y >= -self.camera.viewport_height:
-                        gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
-                                 x, y, color=color)
+                x = (o.x1 - self.camera.position.x) / self.camera.scale
+                y = (self.camera.position.y - o.y2) / self.camera.scale - self.debug_labels_font_size * 2
+                if x >= 0 and y <= 0 and x <= self.camera.viewport_width and y >= -self.camera.viewport_height:
+                    gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
+                                x, y, color=color)
 
-                if o.nametype == "Boss" and o.name == "fighting_boss":
-                    state = o.state
-                    text = f"st={state.slash_timer}"
+            if o.nametype == "Boss" and o.name == "fighting_boss":
+                state = o.state
+                text = f"st={state.slash_timer}"
 
-                    text_color = (255, 0, 0, 255)
-                    gfx.draw_txt(f"debug_boss_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
-                                    o.x1, o.y1, color=text_color)
-                    
-                    if sb := state.slashbox_left:
-                        # left is purple
-                        sb_color = (255, 0, 255, 255)
-                        objs.append(gfx.lrtb_rectangle_outline(
-                            sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
-                        ))
-                    if sb := state.slashbox_right:
-                        # right is green
-                        sb_color = (0, 255, 0, 255)
-                        objs.append(gfx.lrtb_rectangle_outline(
-                            sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
-                        ))
+                text_color = (255, 0, 0, 255)
+                gfx.draw_txt(f"debug_boss_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
+                                o.x1, o.y1, color=text_color)
+                
+                if sb := state.slashbox_left:
+                    # left is purple
+                    sb_color = (255, 0, 255, 255)
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
+                    ))
+                if sb := state.slashbox_right:
+                    # right is green
+                    sb_color = (0, 255, 0, 255)
+                    objs.append(gfx.lrtb_rectangle_outline(
+                        sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
+                    ))
 
-                if cheats_settings["draw_lines"] and o.nametype in {"Item"}:
-                    if o.nametype == "Item":
-                        objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
+            if cheats_settings["draw_lines"] and o.nametype in {"Item"}:
+                if o.nametype == "Item":
+                    objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
 
         if cheats_settings["track_objects"] or len(cheats_settings["exact_track_objects"]) > 0:
             tracked_objects = list(filter(lambda x: len(x) > 0, map(lambda x: x.strip().lower(), cheats_settings["track_objects"].split(","))))

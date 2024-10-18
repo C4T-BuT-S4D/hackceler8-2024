@@ -53,6 +53,12 @@ else
   exit 1
 fi
 
-python3 client.py --hostname="$hostname" --port=8888 --ca="$capath" --cert="$certpath" --key="$keypath" $standalone
+extra_items=""
+if [ -n "$EXTRA" ]; then
+    extra_items="--extra-items $EXTRA"
+fi
+
+
+python3 client.py --hostname="$hostname" --port=8888 --ca="$capath" --cert="$certpath" --key="$keypath" $standalone $extra_items
 
 cd $initialdir
