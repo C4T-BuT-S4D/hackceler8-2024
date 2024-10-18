@@ -749,8 +749,9 @@ class Hackceler8(gfx.Window):
                     state = o.state
                     text = f"st={state.slash_timer}"
 
+                    text_color = (255, 0, 0, 255)
                     gfx.draw_txt(f"debug_boss_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
-                                    o.x1, o.y1, color=color)
+                                    o.x1, o.y1, color=text_color)
                     
                     if sb := state.slashbox_left:
                         # left is purple
