@@ -166,19 +166,19 @@ impl PhysState {
 
 // Modify player-related state
 impl PhysState {
-    fn player_reset_can_jump(&mut self, state: &StaticState) {
+    fn player_reset_can_jump(&mut self, state: &StaticState, was_in_the_air: bool) {
         if self.settings.mode == GameMode::Scroller {
             self.player.can_jump = true;
             return;
         }
 
         self.player.move_by(0.0, -1.0);
-        self.player.can_jump = self.player_can_jump(state, &self.player.get_hitbox());
+        self.player.can_jump = self.player_can_jump(was_in_the_air);
         self.player.move_by(0.0, 1.0);
     }
 
     fn player_tick(&mut self, state: &StaticState, act: Action) {
-        self.player_update_movement(state, act);
+        self.player_update_movement(state, act, self.player.in_the_air);
         self.player_update_stamina(act.shift);
     }
 
@@ -193,6 +193,7 @@ impl PhysState {
         &mut self,
         state: &StaticState,
         act: Action,
+        was_in_the_air: bool,
     ) {
         self.player.vx = 0.0;
         if self.settings.mode == GameMode::Scroller {
@@ -204,23 +205,23 @@ impl PhysState {
         let sprinting = act.shift && self.player.stamina > 0.0;
 
         if act.mov.is_right() {
-            self.player_change_direction(state, Direction::E, sprinting);
+            self.player_change_direction(state, Direction::E, sprinting, was_in_the_air);
         }
 
         if act.mov.is_left() {
-            self.player_change_direction(state, Direction::W, sprinting);
+            self.player_change_direction(state, Direction::W, sprinting, was_in_the_air);
         }
 
         if !self.was_step_up_before && act.mov.is_up() {
-            self.player_change_direction(state, Direction::N, sprinting);
+            self.player_change_direction(state, Direction::N, sprinting, was_in_the_air);
         }
 
         if self.settings.mode == GameMode::Scroller && act.mov.is_down() {
-            self.player_change_direction(state, Direction::S, sprinting);
+            self.player_change_direction(state, Direction::S, sprinting, was_in_the_air);
         }
     }
 
-    fn player_change_direction(&mut self, state: &StaticState, direction: Direction, sprinting: bool) {
+    fn player_change_direction(&mut self, state: &StaticState, direction: Direction, sprinting: bool, was_in_the_air: bool) {
         let mut speed_multiplier = 1.0;
         if (direction == Direction::E || direction == Direction::W) && sprinting {
             speed_multiplier = self.player.speed_multiplier;
@@ -241,7 +242,7 @@ impl PhysState {
                     return;
                 }
 
-                self.player_reset_can_jump(state);
+                self.player_reset_can_jump(state, was_in_the_air);
                 if !self.player.can_jump && !self.player.jump_override {
                     return;
                 }
@@ -282,16 +283,8 @@ impl PhysState {
         (collisions_x, collisions_y)
     }
 
-    fn player_can_jump(&self, state: &StaticState, player: &Hitbox) -> bool {
-        for (o1, _) in &state.objects {
-            if o1.collides(player) {
-                let mpv = o1.get_mpv(player);
-                if rround::round(mpv.x, 2) as i32 == 0 && mpv.y > 0.0 {
-                    return true;
-                }
-            }
-        }
-        false
+    fn player_can_jump(&self, was_in_the_air: bool) -> bool {
+        !was_in_the_air
     }
 }
 
