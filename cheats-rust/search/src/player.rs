@@ -24,6 +24,9 @@ pub struct PlayerState {
     pub base_vy: f64,
 
     #[pyo3(get, set)]
+    pub health: f64,
+
+    #[pyo3(get, set)]
     pub jump_override: bool,
     #[pyo3(get, set)]
     pub direction: Direction,
@@ -55,12 +58,14 @@ impl PlayerState {
     pub fn new(
         x: f64,
         y: f64,
-        
+
         vx: f64,
         vy: f64,
-        
+
         base_vx: f64,
         base_vy: f64,
+
+        health: f64,
 
         jump_override: bool,
         direction: Direction,
@@ -84,6 +89,7 @@ impl PlayerState {
             in_the_air,
             can_jump,
             running,
+            health,
             dead: false,
             stamina,
             speed_multiplier,

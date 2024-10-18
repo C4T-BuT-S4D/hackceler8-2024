@@ -12,5 +12,8 @@
       "source.unusedImports": "never"
     }
   },
-  "python.analysis.extraPaths": ["./handout/env/src/moderngl-window"]
+  "python.analysis.extraPaths": ["./handout/env/src/moderngl-window"],
+  "[rust]": {
+    "editor.formatOnSave": true
+  }
 }

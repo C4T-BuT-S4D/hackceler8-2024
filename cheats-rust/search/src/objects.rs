@@ -1,13 +1,16 @@
 use pyo3::pyclass;
 use serde::{Deserialize, Serialize};
 
+use crate::geometry::Pointf;
+
 #[pyclass(eq)]
-#[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ObjectType {
-    Wall,
-    Ouch,
-    SpikeOuch,
-    Portal,
-    Warp,
-    Projectile,
+    Wall(),
+    Ouch(),
+    SpikeOuch(),
+    Portal(),
+    Warp(),
+    Projectile(Pointf),
+    ConstantDamage(f64),
 }

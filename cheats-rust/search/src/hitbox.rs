@@ -37,7 +37,7 @@ impl Hitbox {
 
     pub fn collides(&self, other: &Hitbox) -> bool {
         self.rect.collides(&other.rect)
-    } 
+    }
 
     pub fn get_mpv(&self, other: &Hitbox) -> Pointf {
         self.rect.get_mpv(&other.rect)

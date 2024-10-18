@@ -78,7 +78,6 @@ struct SearchResult<'a> {
     next_state: PhysState,
 }
 
-
 pub fn allowed_actions(settings: &SearchSettings) -> Vec<Action> {
     let shift_variants = if settings.always_shift {
         vec![true]
@@ -103,7 +102,10 @@ pub fn allowed_actions(settings: &SearchSettings) -> Vec<Action> {
                     continue; // no-shift option already considered in other iteration
                 }
             }
-            ans.push(Action { mov: next_move, shift: shift_pressed });
+            ans.push(Action {
+                mov: next_move,
+                shift: shift_pressed,
+            });
         }
     }
     ans
@@ -113,7 +115,8 @@ pub fn apply_transition(
     settings: &SearchSettings,
     state: PhysState,
     static_state: &StaticState,
-    act: Action) -> PhysState {
+    act: Action,
+) -> PhysState {
     let mut neighbor_state = state;
     neighbor_state.tick(act, static_state, settings);
     neighbor_state
@@ -123,14 +126,16 @@ pub fn transitions<'a>(
     settings: &'a SearchSettings,
     state: &'a PhysState,
     static_state: &'a StaticState,
-    acts: &'a [Action]
+    acts: &'a [Action],
 ) -> impl Iterator<Item = (Action, PhysState)> + 'a {
-    acts.iter().filter(|&act| !(act.mov.is_up() && state.was_step_up_before))
+    acts.iter()
+        .filter(|&act| !(act.mov.is_up() && state.was_step_up_before))
         .map(move |&act| {
-                let mut neighbor_state = *state;
-                neighbor_state.tick(act, static_state, settings);
-                (act, neighbor_state)
-        }).filter(|(_act, st)| !st.player.dead)
+            let mut neighbor_state = *state;
+            neighbor_state.tick(act, static_state, settings);
+            (act, neighbor_state)
+        })
+        .filter(|(_act, st)| !st.player.dead)
 }
 
 #[pyfunction]
@@ -197,7 +202,6 @@ pub fn astar_search(
                 let mut next_states = Vec::new();
 
                 for (act, neighbor_state) in transitions(&settings, state, &static_state, &acts) {
-
                     if g_score
                         .get(&neighbor_state)
                         .is_some_and(|old_ticks| ticks + 1 >= *old_ticks)
@@ -225,7 +229,11 @@ pub fn astar_search(
             for sr in search_results {
                 if sr.next_state.close_enough(&target_state, TARGET_PRECISION) {
                     let mut moves = reconstruct_path(&came_from, *sr.prev_state);
-                    moves.push((sr.next_action.mov, sr.next_action.shift, sr.next_state.player));
+                    moves.push((
+                        sr.next_action.mov,
+                        sr.next_action.shift,
+                        sr.next_state.player,
+                    ));
                     println!(
                         "found path: iter={:?}; ticks={:?}; elapsed={:?}",
                         iter,
@@ -248,7 +256,14 @@ pub fn astar_search(
             }
         }
     }
-    println!("of {:?}, {:?}", g_score.len(), g_score.iter().filter(|(&st,_)|st.was_step_up_before).count());
+    println!(
+        "of {:?}, {:?}",
+        g_score.len(),
+        g_score
+            .iter()
+            .filter(|(&st, _)| st.was_step_up_before)
+            .count()
+    );
     None
 }
 

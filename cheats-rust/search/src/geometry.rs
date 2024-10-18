@@ -1,13 +1,13 @@
+use std::hash::{Hash, Hasher};
 use std::{
     f64::consts::PI,
     ops::{Div, Mul, Neg, Sub},
 };
-use std::hash::{Hash, Hasher};
 
 use pyo3::{pyclass, pymethods};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
 #[pyclass]
 pub struct Pointf {
     pub x: f64,
@@ -122,21 +122,29 @@ impl Rectangle {
     }
 
     pub fn collides(&self, other: &Rectangle) -> bool {
-        self.x1 <= other.x2
-            && self.x2 >= other.x1
-            && self.y1 <= other.y2
-            && self.y2 >= other.y1
+        self.x1 <= other.x2 && self.x2 >= other.x1 && self.y1 <= other.y2 && self.y2 >= other.y1
     }
 
     pub fn get_mpv(&self, other: &Rectangle) -> Pointf {
         let pvs = vec![
-            Pointf { x: self.x2 - other.x1, y: 0.0 },
-            Pointf { x: self.x1 - other.x2, y: 0.0 },
-            Pointf { x: 0.0, y: self.y2 - other.y1 },
-            Pointf { x: 0.0, y: self.y1 - other.y2 },
+            Pointf {
+                x: self.x2 - other.x1,
+                y: 0.0,
+            },
+            Pointf {
+                x: self.x1 - other.x2,
+                y: 0.0,
+            },
+            Pointf {
+                x: 0.0,
+                y: self.y2 - other.y1,
+            },
+            Pointf {
+                x: 0.0,
+                y: self.y1 - other.y2,
+            },
         ];
-        pvs
-            .into_iter()
+        pvs.into_iter()
             .min_by(|a, b| a.manhattan_len().partial_cmp(&b.manhattan_len()).unwrap())
             .unwrap()
     }

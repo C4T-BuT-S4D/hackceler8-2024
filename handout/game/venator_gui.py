@@ -1100,15 +1100,14 @@ class Hackceler8(gfx.Window):
             heuristic_weight=cheat_settings["heuristic_weight"],
             simple_geometry=cheat_settings["simple_geometry"],
             state_batch_size=cheat_settings["state_batch_size"],
+            allow_damage=cheat_settings["allow_damage"],
         )
-        zero_point = search.Pointf(0.0, 0.0)
         static_objects = [
             (
                 search.Hitbox(
                     search.Rectangle(o.x1, o.x2, o.y1, o.y2),
                 ),
-                search.ObjectType.Wall,
-                zero_point
+                search.ObjectType.Wall()
             )
             for o in (
                 self.game.objects + 
@@ -1120,41 +1119,52 @@ class Hackceler8(gfx.Window):
             )
         ]
 
-        deadly_objects_type = {
-            "Ouch": search.ObjectType.Ouch,
-            "SpikeOuch": search.ObjectType.SpikeOuch,
-            "Projectile": search.ObjectType.Projectile,
-        } | ({
-            "warp": search.ObjectType.Warp,
-            "Portal": search.ObjectType.Portal,
-            } if enable_portals else {})
+        deadly_objects_type = {}
+
+        if enable_portals:
+            deadly_objects_type["warp"] = search.ObjectType.Warp()
+            deadly_objects_type["Portal"] = search.ObjectType.Portal()
+
+        allowed_damage_objects_type = set()
+        if cheat_settings["allow_damage"]:
+            allowed_damage_objects_type = {"Ouch", "SpikeOuch"}
+        else:
+            deadly_objects_type["Ouch"] = search.ObjectType.Ouch()
+            deadly_objects_type["SpikeOuch"] = search.ObjectType.SpikeOuch()
 
         static_objects += [
             (
                 search.Hitbox(
                     search.Rectangle(o.x1, o.x2, o.y1, o.y2),
                 ),
-                deadly_objects_type[o.nametype],
-                zero_point
+                search.ObjectType.ConstantDamage(o.modifier.damage)
+            )
+            for o in self.game.objects
+            if o.nametype in allowed_damage_objects_type
+        ]
+        static_objects += [
+            (
+                search.Hitbox(
+                    search.Rectangle(o.x1, o.x2, o.y1, o.y2),
+                ),
+                deadly_objects_type[o.nametype]
             )
             for o in self.game.objects + self.game.stateful_objects
             if o.nametype in deadly_objects_type
         ]
-
+        
         if enable_proj:
             projs = [
                 (
                     search.Hitbox(
                         search.Rectangle(o.x1, o.x2, o.y1, o.y2),
                     ),
-                    deadly_objects_type[o.nametype],
-                    search.Pointf(getattr(o, 'x_speed', 0), getattr(o, 'y_speed', 0))
+                    search.ObjectType.Projectile(search.Pointf(getattr(o, 'x_speed', 0), getattr(o, 'y_speed', 0)))
                 )
                 for o in self.game.projectile_system.active_projectiles
-                if o.nametype in deadly_objects_type
+                if o.nametype in {"Projectile"}
             ]
             static_objects += projs
-
 
         environments = [
             search.EnvModifier(
@@ -1209,6 +1219,8 @@ class Hackceler8(gfx.Window):
                 vy=player.y_speed,
                 base_vx=player.base_x_speed,
                 base_vy=player.base_y_speed,
+
+                health=player.health,
 
                 jump_override=player.jump_override,
                 direction=player_direction,
@@ -1296,6 +1308,8 @@ class Hackceler8(gfx.Window):
                 base_vx=player.base_x_speed,
                 base_vy=player.base_y_speed,
 
+                health=player.health,
+
                 jump_override=player.jump_override,
                 direction=search.Direction.N,
                 in_the_air=player.in_the_air,
@@ -1310,12 +1324,39 @@ class Hackceler8(gfx.Window):
             state=static_state,
         )
 
+        cheat_settings = get_settings()
+
         path = search.astar_search(
             settings=settings,
             initial_state=initial_state,
             target_state=target_state,
             static_state=static_state,
         )
+
+        if (
+            path and 
+            cheat_settings["allow_damage"] and 
+            (level := cheat_settings["damage_optimization_level"]) > 0
+        ):
+            settings.timeout = cheat_settings["damage_optimization_timeout"]
+            l, r = 0, self.game.player.health
+            for _ in range(level):
+                m = (l + r) / 2
+                initial_state.set_player_health(m)
+                m_path = search.astar_search(
+                    settings=settings,
+                    initial_state=initial_state,
+                    target_state=target_state,
+                    static_state=static_state,
+                )
+                if m_path:
+                    print(f"{m=}, path found")
+                    r = m
+                    path = m_path
+                else:
+                    print(f"{m=}, path not found")
+                    l = m
+        
         if not path:
             logging.warning("Path not found")
 

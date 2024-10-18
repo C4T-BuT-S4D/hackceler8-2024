@@ -8,6 +8,7 @@ use crate::{env_modifier::EnvModifier, geometry::Pointf, hitbox::Hitbox, objects
 pub struct StaticState {
     pub objects: Vec<(Hitbox, ObjectType)>,
     pub deadly: Vec<Hitbox>,
+    pub constant_damage: Vec<(Hitbox, f64)>,
     pub proj: Vec<Hitbox>,
     pub proj_v: Vec<Pointf>,
     pub environments: Vec<EnvModifier>,
@@ -16,19 +17,26 @@ pub struct StaticState {
 #[pymethods]
 impl StaticState {
     #[new]
-    pub fn new(objects: Vec<(Hitbox, ObjectType, Pointf)>, environments: Vec<EnvModifier>) -> Self {
+    pub fn new(objects: Vec<(Hitbox, ObjectType)>, environments: Vec<EnvModifier>) -> Self {
         let mut deadly = Vec::new();
+        let mut constant_damage = Vec::new();
         let mut proj = Vec::new();
         let mut proj_v = Vec::new();
         let mut other_objects = Vec::new();
-        for (hitbox, t, v) in objects {
+        for (hitbox, t) in objects {
             match t {
-                ObjectType::Ouch | ObjectType::SpikeOuch | ObjectType::Portal | ObjectType::Warp  => {
+                ObjectType::Ouch()
+                | ObjectType::SpikeOuch()
+                | ObjectType::Portal()
+                | ObjectType::Warp() => {
                     deadly.push(hitbox);
                 }
-                ObjectType::Projectile => {
+                ObjectType::Projectile(v) => {
                     proj.push(hitbox);
                     proj_v.push(v);
+                }
+                ObjectType::ConstantDamage(damage) => {
+                    constant_damage.push((hitbox, damage));
                 }
                 _ => {
                     other_objects.push((hitbox, t));
@@ -38,6 +46,7 @@ impl StaticState {
         StaticState {
             objects: other_objects,
             deadly,
+            constant_damage,
             proj,
             proj_v,
             environments,

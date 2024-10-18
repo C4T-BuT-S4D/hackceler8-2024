@@ -21,8 +21,8 @@ use crate::astar::astar_search;
 use crate::static_state::StaticState;
 
 pub mod astar;
-pub mod encoding;
 pub mod dodge;
+pub mod encoding;
 pub mod env_modifier;
 pub mod geometry;
 pub mod hitbox;

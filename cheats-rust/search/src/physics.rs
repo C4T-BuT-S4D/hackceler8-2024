@@ -46,15 +46,14 @@ impl PhysState {
         ps.detect_env_mod(state);
         ps
     }
+
+    pub fn set_player_health(&mut self, health: f64) {
+        self.player.health = health;
+    }
 }
 
 impl PhysState {
-    pub fn tick(
-        &mut self,
-        act: Action,
-        state: &StaticState,
-        _search_settings: &SearchSettings,
-    ) {
+    pub fn tick(&mut self, act: Action, state: &StaticState, search_settings: &SearchSettings) {
         self.player_tick(state, act);
 
         // projectiles are checked before the player's position is updated
@@ -73,6 +72,18 @@ impl PhysState {
             if deadly.collides(&self.player.get_hitbox()) {
                 self.player.dead = true;
                 return;
+            }
+        }
+
+        if search_settings.allow_damage {
+            for (hitbox, damage) in &state.constant_damage {
+                if hitbox.collides(&self.player.get_hitbox()) {
+                    self.player.health = (self.player.health - damage).max(0.0);
+                    if self.player.health == 0.0 {
+                        self.player.dead = true;
+                        return;
+                    }
+                }
             }
         }
 
@@ -119,7 +130,8 @@ impl PhysState {
 // Align player edges with other objects
 impl PhysState {
     fn align_edges(&mut self, state: &StaticState) {
-        let (collisions_x, collisions_y) = self.get_collisions_list(state, &self.player.get_hitbox());
+        let (collisions_x, collisions_y) =
+            self.get_collisions_list(state, &self.player.get_hitbox());
         if collisions_x.is_empty() && collisions_y.is_empty() {
             self.player.in_the_air = true;
             return;
@@ -142,9 +154,17 @@ impl PhysState {
         self.player.vx = 0.0;
 
         if collision.mpv.x < 0.0 {
-            self.player.move_by(collision.hitbox.get_leftmost_point() - self.player.get_hitbox().get_rightmost_point(), 0.0);
+            self.player.move_by(
+                collision.hitbox.get_leftmost_point()
+                    - self.player.get_hitbox().get_rightmost_point(),
+                0.0,
+            );
         } else {
-            self.player.move_by(collision.hitbox.get_rightmost_point() - self.player.get_hitbox().get_leftmost_point(), 0.0);
+            self.player.move_by(
+                collision.hitbox.get_rightmost_point()
+                    - self.player.get_hitbox().get_leftmost_point(),
+                0.0,
+            );
         }
     }
 
@@ -156,10 +176,16 @@ impl PhysState {
         self.player.vy = 0.0;
 
         if collision.mpv.y > 0.0 {
-            self.player.move_by(0.0, collision.hitbox.get_highest_point() - self.player.get_hitbox().get_lowest_point());
+            self.player.move_by(
+                0.0,
+                collision.hitbox.get_highest_point() - self.player.get_hitbox().get_lowest_point(),
+            );
             self.player.in_the_air = false;
         } else {
-            self.player.move_by(0.0, collision.hitbox.get_lowest_point() - self.player.get_hitbox().get_highest_point());
+            self.player.move_by(
+                0.0,
+                collision.hitbox.get_lowest_point() - self.player.get_hitbox().get_highest_point(),
+            );
         }
     }
 }
@@ -189,11 +215,7 @@ impl PhysState {
         self.player.stamina = (self.player.stamina + 0.5).min(100.0);
     }
 
-    fn player_update_movement(
-        &mut self,
-        state: &StaticState,
-        act: Action,
-    ) {
+    fn player_update_movement(&mut self, state: &StaticState, act: Action) {
         self.player.vx = 0.0;
         if self.settings.mode == GameMode::Scroller {
             self.player.vy = 0.0;
@@ -220,7 +242,12 @@ impl PhysState {
         }
     }
 
-    fn player_change_direction(&mut self, state: &StaticState, direction: Direction, sprinting: bool) {
+    fn player_change_direction(
+        &mut self,
+        state: &StaticState,
+        direction: Direction,
+        sprinting: bool,
+    ) {
         let mut speed_multiplier = 1.0;
         if (direction == Direction::E || direction == Direction::W) && sprinting {
             speed_multiplier = self.player.speed_multiplier;
@@ -258,7 +285,11 @@ impl PhysState {
 }
 
 impl PhysState {
-    fn get_collisions_list(&self, state: &StaticState, player: &Hitbox) -> (Vec<Collision>, Vec<Collision>) {
+    fn get_collisions_list(
+        &self,
+        state: &StaticState,
+        player: &Hitbox,
+    ) -> (Vec<Collision>, Vec<Collision>) {
         let mut collisions_x = Vec::new();
         let mut collisions_y = Vec::new();
 
@@ -266,15 +297,9 @@ impl PhysState {
             if o1.collides(player) {
                 let mpv = o1.get_mpv(player);
                 if rround::round(mpv.x, 2) as i32 == 0 {
-                    collisions_y.push(Collision {
-                        hitbox: *o1,
-                        mpv,
-                    });
+                    collisions_y.push(Collision { hitbox: *o1, mpv });
                 } else if rround::round(mpv.y, 2) as i32 == 0 {
-                    collisions_x.push(Collision {
-                        hitbox: *o1,
-                        mpv,
-                    });
+                    collisions_x.push(Collision { hitbox: *o1, mpv });
                 }
             }
         }
@@ -343,6 +368,12 @@ impl PartialEq for PhysState {
             }
         }
 
+        if self.settings.allow_damage {
+            if self.player.health != other.player.health {
+                return false;
+            }
+        }
+
         // if self.player.stamina != other.player.stamina {
         //     return false;
         // }
@@ -373,6 +404,9 @@ impl Hash for PhysState {
                 state.write(&self.player.vy.to_le_bytes());
             }
         }
+        if self.settings.allow_damage {
+            state.write(&self.player.health.to_le_bytes());
+        }
 
         // state.write(&self.player.stamina.to_le_bytes());
         state.write(&[self.was_step_up_before as u8]);
@@ -387,7 +421,10 @@ pub fn get_transition(
     next_move: Move,
     shift_pressed: bool,
 ) -> PlayerState {
-    let act = Action { mov: next_move, shift: shift_pressed };
+    let act = Action {
+        mov: next_move,
+        shift: shift_pressed,
+    };
     state.tick(act, &static_state, &settings);
     state.player
 }

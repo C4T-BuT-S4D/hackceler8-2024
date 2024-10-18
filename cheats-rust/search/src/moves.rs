@@ -71,8 +71,8 @@ impl Move {
 #[pyclass(eq)]
 #[derive(PartialEq, Eq, Debug, Copy, Clone, Hash, Serialize, Deserialize)]
 pub struct Action {
-    pub mov : Move,
-    pub shift: bool
+    pub mov: Move,
+    pub shift: bool,
 }
 
 impl Action {

@@ -2,8 +2,6 @@ use pyo3::prelude::*;
 
 use crate::geometry::Pointf;
 
-
-
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Polygon {

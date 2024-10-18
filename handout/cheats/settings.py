@@ -132,6 +132,25 @@ class PathfindingSettings(Form):
         description="Number of states to process in batch",
     )
 
+    allow_damage = BooleanField(
+        default=False,
+        label="Allow damage",
+        description="Allow taking damage",
+    )
+
+    damage_optimization_level = IntegerField(
+        default=0,
+        label="Damage optimization level",
+        description="Number of times to optimize damage",
+    )
+
+    damage_optimization_timeout = IntegerField(
+        default=1,
+        label="Damage optimization timeout",
+        description="Timeout for damage optimization iteration",
+    )
+
+
 class SettingsDict(TypedDict):
     slow_ticks_count: int
     semirun_100: bool
@@ -154,6 +173,9 @@ class SettingsDict(TypedDict):
     cancel_applying_ticks_on_key_pressed: bool
     fast_replay: bool
     exact_track_objects: set[str]
+    allow_damage: bool
+    damage_optimization_level: int
+    damage_optimization_timeout: int
 
 
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]

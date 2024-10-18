@@ -15,19 +15,24 @@ pub enum GameMode {
 pub struct PhysicsSettings {
     pub mode: GameMode,
     pub simple_geometry: bool,
+    pub allow_damage: bool,
 }
 
 #[pyclass]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchSettings {
     pub mode: GameMode,
+
+    #[pyo3(get, set)]
     pub timeout: u64,
+
     pub always_shift: bool,
     pub disable_shift: bool,
     pub allowed_moves: Vec<Move>,
     pub heuristic_weight: f64,
     pub simple_geometry: bool,
     pub state_batch_size: usize,
+    pub allow_damage: bool,
 }
 
 #[pymethods]
@@ -43,6 +48,7 @@ impl SearchSettings {
         heuristic_weight: f64,
         simple_geometry: bool,
         state_batch_size: usize,
+        allow_damage: bool,
     ) -> Self {
         Self {
             mode,
@@ -53,6 +59,7 @@ impl SearchSettings {
             heuristic_weight,
             simple_geometry,
             state_batch_size,
+            allow_damage,
         }
     }
 
@@ -60,6 +67,7 @@ impl SearchSettings {
         PhysicsSettings {
             mode: self.mode,
             simple_geometry: self.simple_geometry,
+            allow_damage: self.allow_damage,
         }
     }
 }
