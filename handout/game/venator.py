@@ -204,7 +204,7 @@ class Venator:
                             f"Failed to parse save state from server: {e}")
                         continue
                     apply_save_state(_save_state, self)
-                    logging.info("Loaded save state from server")
+                    logging.info(f"Loaded save state from server: {_save_state}")
                     with self.mutex:
                         self.ready = True
                 with self.mutex:

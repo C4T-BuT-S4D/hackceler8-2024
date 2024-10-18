@@ -41,7 +41,7 @@ class Hackceler8(gfx.Window):
     window_size = (constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT)
     title = SCREEN_TITLE
 
-    def __init__(self, net=None, is_prerender=False, **kwargs):
+    def __init__(self, net=None, is_prerender=False, extra_items: list[str] = [], **kwargs):
         super().__init__(**kwargs)
         self.heart = gfx.GuiImage.load(self, "resources/objects/heart.png")
         self.star = gfx.GuiImage.load(self, "resources/objects/star.png")
@@ -73,7 +73,7 @@ class Hackceler8(gfx.Window):
         self.is_prerender = is_prerender
         self.playing_recording = False
         self.auto_shoot = False
-
+        self.extra_items = extra_items
         # map item name to map name
         self.object_map_mapping: dict[str, str] = {}
         self.map_connections: dict[str, list[str]] = {}
@@ -92,7 +92,7 @@ class Hackceler8(gfx.Window):
         self.projected_height = 0
 
     def setup_game(self):
-        self.game = Venator(self.net, is_server=False)
+        self.game = Venator(self.net, is_server=False, extra_items=self.extra_items)
 
         self._save_overview_state()
         self._build_object_map_mapping()

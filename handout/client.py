@@ -103,6 +103,7 @@ class Hx8Client(venator_gui.Hackceler8):
             default=False,
             help='Perform prerender of all maps and exit',
         )
+        parser.add_argument("--extra-items", nargs="+", help="Additional helpful items to give to the player")
 
 
 def main():
