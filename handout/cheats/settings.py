@@ -150,6 +150,11 @@ class PathfindingSettings(Form):
         description="Timeout for damage optimization iteration",
     )
 
+    draw_pathfinding_center_points = BooleanField(
+        default=True,
+        label="Draw pathfinding center points",
+    )
+
 
 class SettingsDict(TypedDict):
     slow_ticks_count: int
@@ -176,6 +181,7 @@ class SettingsDict(TypedDict):
     allow_damage: bool
     damage_optimization_level: int
     damage_optimization_timeout: int
+    draw_pathfinding_center_points: bool
 
 
 settings_forms = [ExtraSettings, RenderingSettings, PathfindingSettings]

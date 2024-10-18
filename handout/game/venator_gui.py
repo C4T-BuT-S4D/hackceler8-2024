@@ -94,6 +94,8 @@ class Hackceler8(gfx.Window):
         self.projected_width = 0
         self.projected_height = 0
 
+        self.pathfinding_center_points: list[tuple[float, float]] = []
+
     def setup_game(self):
         self.game = Venator(self.net, is_server=False, extra_items=self.extra_items)
 
@@ -195,10 +197,12 @@ class Hackceler8(gfx.Window):
         if self.game.boss is not None:
             self.game.boss.draw_gui()
 
-        if self._white_text():
-            imgui.push_style_color(imgui.COLOR_TEXT, 1,1,1,1)
-        else:
-            imgui.push_style_color(imgui.COLOR_TEXT, 0,0,0,1)
+        # if self._white_text():
+        #     imgui.push_style_color(imgui.COLOR_TEXT, 1,1,1,1)
+        # else:
+        #     imgui.push_style_color(imgui.COLOR_TEXT, 0,0,0,1)
+
+        imgui.push_style_color(imgui.COLOR_TEXT, *constants.NEPLOX_TEXT_COLOR)
 
         gfx.draw_img("health", self.heart, 30, -80)
         gfx.draw_txt("health", gfx.FONT_PIXEL[30], ":%.02f" % self.game.player.health,
@@ -801,6 +805,13 @@ class Hackceler8(gfx.Window):
             objs.append(gfx.circle_filled(int(pos[0]) + 650, int(pos[1]) + 120, 30, (255, 0, 0, 255)))
 
         objs.extend(self.debug_objects.values())
+
+        if cheats_settings["draw_pathfinding_center_points"]:
+            for i in range(len(self.pathfinding_center_points) - 1):
+                x1, y1 = self.pathfinding_center_points[i]
+                x2, y2 = self.pathfinding_center_points[i + 1]
+                objs.append(gfx.line(x1, y1, x2, y2, constants.NEPLOX_OBJECT_COLOR))
+
         self.main_layer.add_many(objs)
         self.main_layer.draw(); self.main_layer.clear()
 
@@ -1254,6 +1265,8 @@ class Hackceler8(gfx.Window):
         
         if self.game is None:
             return
+        
+        self.pathfinding_center_points = []
 
         border_x = (self.projected_width - self.wnd.viewport_width) / 2
         border_y = (self.projected_height - self.wnd.viewport_height) / 2
@@ -1391,7 +1404,7 @@ class Hackceler8(gfx.Window):
             self.ticks_to_apply = []
             self.playing_recording = False
             for move, shift, state in path:
-
+                self.pathfinding_center_points.append((state.x, state.y))
                 self.ticks_to_apply.append(
                     TickData(
                         force_keys=True,
