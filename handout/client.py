@@ -63,7 +63,7 @@ class Hx8Client(venator_gui.Hackceler8):
                 raise SystemExit()
 
         constants.STANDALONE = self.argv.standalone
-        super().__init__(net=net, is_prerender=self.argv.prerender, **kwargs)
+        super().__init__(net=net, is_prerender=self.argv.prerender, extra_items=self.argv.extra_items, **kwargs)
 
     @classmethod
     def add_arguments(cls, parser: argparse.ArgumentParser):

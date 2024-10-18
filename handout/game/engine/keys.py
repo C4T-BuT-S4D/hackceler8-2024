@@ -54,6 +54,8 @@ class Keys(enum.Enum):
 
     @classmethod
     def from_ui(cls, k: int) -> Optional['Keys']:
+        if k == 43:
+            k = 61
         return cls.__rev_ui.get(k)
 
     # https://docs.python.org/3/howto/enum.html#orderedenum
