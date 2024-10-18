@@ -47,6 +47,7 @@ class Hackceler8(gfx.Window):
         self.heart = gfx.GuiImage.load(self, "resources/objects/heart.png")
         self.star = gfx.GuiImage.load(self, "resources/objects/star.png")
         self.stamina = gfx.GuiImage.load(self, "resources/objects/stamina.png")
+        self.recording = gfx.GuiImage.load(self, "resources/objects/recording.png")
 
         self.boss_bg = None
 
@@ -191,6 +192,9 @@ class Hackceler8(gfx.Window):
 
         if not self.render_gui:
             return
+
+        if self.recording_enabled:
+            gfx.draw_img("recording", self.recording, 300, -80)
 
         if self.game.boss is not None:
             self.game.boss.draw_gui()
@@ -795,10 +799,6 @@ class Hackceler8(gfx.Window):
                     if (map_name, next_map_name) in self.map_warps:
                         x, y = self.map_warps[(self.game.current_map, next_map_name)]
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, x, y, color))
-
-        if self.recording_enabled:
-            pos = list(self.camera.position)
-            objs.append(gfx.circle_filled(int(pos[0]) + 650, int(pos[1]) + 120, 30, (255, 0, 0, 255)))
 
         objs.extend(self.debug_objects.values())
         self.main_layer.add_many(objs)
