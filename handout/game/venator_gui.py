@@ -656,7 +656,8 @@ class Hackceler8(gfx.Window):
                     # olive green
                     color = (107, 142, 35, 255)
                 case "Boss":
-                    continue # skip without warning
+                    # cloudy sky blue
+                    color = (135, 206, 235, 255)
                 case _:
                     logging.warning(f"skipped object {o.nametype}")
 
@@ -743,7 +744,27 @@ class Hackceler8(gfx.Window):
                     if x >= 0 and y <= 0 and x <= self.camera.viewport_width and y >= -self.camera.viewport_height:
                         gfx.draw_txt(f"debug_{o.nametype}_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
                                  x, y, color=color)
+
+                    if o.nametype == "Boss" and o.name == "fighting_boss":
+                        state = o.state
+                        text = f"st={state.slash_timer}"
+
+                        gfx.draw_txt(f"debug_boss_{o.x1}_{o.y1}", gfx.FONT_PIXEL[self.debug_labels_font_size], text,
+                                     o.x1, o.y1, color=color)
                         
+                        if sb := state.slashbox_left:
+                            # left is purple
+                            sb_color = (255, 0, 255, 255)
+                            objs.append(gfx.lrtb_rectangle_outline(
+                                sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
+                            ))
+                        if sb := state.slashbox_right:
+                            # right is green
+                            sb_color = (0, 255, 0, 255)
+                            objs.append(gfx.lrtb_rectangle_outline(
+                                sb.x1, sb.x2, sb.y2, sb.y1, sb_color, border=cheats_settings["object_hitbox"]
+                            ))
+
                 if cheats_settings["draw_lines"] and o.nametype in {"Item"}:
                     if o.nametype == "Item":
                         objs.append(gfx.line(self.game.player.x, self.game.player.y, o.x, o.y, color))
