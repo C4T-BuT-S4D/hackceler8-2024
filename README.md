@@ -18,6 +18,11 @@ Tooling for the Google CTF 2024 Hackceler8 finals by the C4T BuT S4D team.
 - Automatic shooting, enabled on `Ctrl+J`.
 - Utility [client.sh](./client.sh) and [server.sh](./server.sh) scripts to start the game locally in different modes and with/without SSL.
 - Automatic **projectile dodging**, simulating a few ticks into the future and saving the player from taking certain damage from enemy bullets and spikes.
+- Pasting text into textboxes.
+
+### Game patches
+
+For each game this repo has two branches: `game-X` is the unpatched version provided by orgs, and `game-X-patched` is the version with the cheats applied. Each branch has some specific changes applied, which are not ported to the master branch. Most notable is in `game-4-patched`, adding support for variable damage obstacles in pathfinding, allowing to find close-to-optimal solutions for `Fire` objects. This branch also modifies the algo to account for resetting `y_speed` on taking damage.
 
 ## Cheats UI
 
