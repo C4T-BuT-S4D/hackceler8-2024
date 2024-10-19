@@ -17,6 +17,7 @@ from typing import Optional
 
 from game.components.weapon import cannon
 from game.components.weapon import gun
+from game.components.weapon import ranged_rifle
 from game.components.weapon.weapon import Weapon
 from game.components.weapon import pencil
 from game.components.weapon import poison
@@ -29,7 +30,8 @@ weapon_types = {"gun": gun.Gun,
                 "green_gun": gun.GreenGun,
                 "cannon": cannon.Cannon,
                 "pencil": pencil.Pencil,
-                "poison": poison.Poison
+                "poison": poison.Poison,
+                "ranged_rifle": ranged_rifle.RangedRifle,
                 }
 
 

@@ -35,6 +35,7 @@ class Player(generics.GenericObject):
     DIR_S = "S"
     MAX_HEALTH = 100
     MELEE_DAMAGE = 10
+    MAX_WEAPONS = 3
 
     def __init__(self, coords):
         super().__init__(
@@ -79,6 +80,7 @@ class Player(generics.GenericObject):
         self.shoot_bonus = False
         self.health_bonus = False
         self.scroller_mode = False
+        self.max_weapons = self.MAX_WEAPONS
 
         # Will be overwritten
         self.game: Optional[Venator] = None
@@ -267,3 +269,7 @@ class Player(generics.GenericObject):
         weapon.move_to_player()
         paint_mode_enabled = isinstance(weapon, Pencil)
         self.game.set_paint_mode(paint_mode_enabled)
+
+    def decrease_health(self, points, source=None):
+        super().decrease_health(points, source)
+        self.y_speed = 0

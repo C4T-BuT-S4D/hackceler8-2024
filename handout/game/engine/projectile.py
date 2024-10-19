@@ -13,6 +13,7 @@
 # limitations under the License.
 import itertools
 import logging
+import math
 
 from game.components.projectile import Projectile
 from game.components.weapon.weapon import Weapon
@@ -64,9 +65,12 @@ class ProjectileSystem:
     def _check_player_collisions(self, pressed_keys):
         # Collect weapons with the space key.
         if Keys.SPACE not in pressed_keys:
+            return
+        if len(self.game.player.weapons) >= self.game.player.max_weapons:
+            logging.info("maximum number of weapons picked, can't pick more")
             return False
         are_weapons_updated = False
-        for o in self.weapons:
+        for o in list(self.weapons):
             if o.collides(self.game.player):
                 logging.debug("Player collected with a weapon")
                 self.game.player.weapons.append(o)
@@ -115,8 +119,10 @@ class ProjectileSystem:
             if p.check_oob(self.game.player):
                 self.active_projectiles.remove(p)
                 continue
-            p.move(p.x_speed, p.y_speed)
-            if self._check_collision(p):
+            if p.projectile_range > 0:
+                p.move(p.x_speed, p.y_speed)
+                p.projectile_range -= 1
+            if self._check_collision(p) or p.projectile_range == 0:
                 self.active_projectiles.remove(p)
                 continue
             match p.origin:
@@ -136,6 +142,10 @@ class ProjectileSystem:
                     t.check_death()
                     logging.info(f"New target health: {t.health}")
                     logging.info(f"New target health: {t.dead}")
+                    if t.dead:
+                        for weapon in self.game.player.weapons:
+                            if weapon.display_name == p.weapon:
+                                weapon.kill_counter += 1
                 if (t.dead and not t.does_respawn) or t.destructing:
                     logging.debug("Target destroyed sir")
                     self.targets.remove(t)

@@ -22,7 +22,7 @@ from game.engine import hitbox
 import game.components.boss.implementation
 
 MARGIN = 50
-BOSS_TITLE = 'villAIn Mk.I "Example Boss"'
+BOSS_TITLE = 'Fuego Mk.II: Close combat'
 MAX_HEALTH = 500
 HEALTHBAR_LEN = 1240
 
@@ -215,7 +215,10 @@ class FightingBoss(Boss):
                 bullet.x - bullet.hitbox_w * 0.5, bullet.x + bullet.hitbox_w * 0.5,
                 bullet.y - bullet.hitbox_w * 0.5, bullet.y + bullet.hitbox_w * 0.5)
             if r.collides(self.game.player):
-                self.game.player.decrease_health(bullet.damage, "fighting_boss")
+                dmg = bullet.damage
+                if self.game.has_item("strong_boss"):
+                    dmg *= 2
+                self.game.player.decrease_health(dmg, "fighting_boss")
                 if not self.game.player.dead:
                     self.game.player.sprite.set_flashing(True)
                 self.despawn(bullet)

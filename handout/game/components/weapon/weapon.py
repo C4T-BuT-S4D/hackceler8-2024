@@ -21,6 +21,7 @@ from game.engine.point import Point
 
 class Weapon(generics.GenericObject):
     damage = 10
+    default_range = 50
 
     def __init__(
             self,
@@ -29,6 +30,7 @@ class Weapon(generics.GenericObject):
             display_name,
             tileset_path=None,
             rect=None,
+            range=None,
     ):
         super().__init__(
             coords,
@@ -41,6 +43,11 @@ class Weapon(generics.GenericObject):
         self.display_name = display_name
         self.cool_down_timer = 0
         self.charging = False
+        self.range = self.default_range
+        self.kill_counter = 0
+
+        if range:
+            self.range = range
 
         # The player can only use (equip) one weapon at a time
         self.equipped = False
@@ -72,7 +79,7 @@ class Weapon(generics.GenericObject):
             self.sprite.set_flipped(False)
 
     def fireball(self, speed_x, size=1):
-        return Projectile(
+        projectile = Projectile(
             coords=Point(self.x, self.y + size * 4),
             speed_x=speed_x,
             speed_y=0,
@@ -81,6 +88,8 @@ class Weapon(generics.GenericObject):
             scale=size,
             weapon=self.display_name,
         )
+        projectile.projectile_range = self.range
+        return projectile
 
     def equip(self, player):
         self.player = player

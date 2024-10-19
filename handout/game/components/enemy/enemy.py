@@ -92,6 +92,13 @@ class Enemy(generics.GenericObject):
 
     def tick(self):
         super().tick()
+
+        if self.game.has_item("healthy"):
+            base = 30 if self.name == "block_enemy" else 50
+            if self.health == base and self.max_health == base:
+                self.max_health *= 2
+                self.set_health(self.max_health)
+
         if self.sprite.alpha < 255:
             self.sprite.alpha = min(255, self.sprite.alpha + 10)
 
