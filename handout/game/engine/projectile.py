@@ -64,21 +64,24 @@ class ProjectileSystem:
 
     def _check_player_collisions(self, pressed_keys):
         # Collect weapons with the space key.
+        
+        print('-----------')
         for o in list(self.weapons):
-            print('-----------')
             if o.collides(self.game.player):
                 print(f'{o.name} collides with player')
+        print('-----------\n')
+
         if Keys.SPACE not in pressed_keys:
             return
         if len(self.game.player.weapons) >= self.game.player.max_weapons:
             logging.info("maximum number of weapons picked, can't pick more")
             return False
         are_weapons_updated = False
+        print('===========')
         for o in list(self.weapons):
-            print('-----------')
             if o.collides(self.game.player):
-                print(f'{o.name} collides with player')
                 logging.debug("Player collected with a weapon")
+                print(f'{o.name} collected')
                 self.game.player.weapons.append(o)
                 self.weapons.remove(o)
                 existing_equipped = any(w.equipped for w in self.game.player.weapons)
@@ -86,6 +89,7 @@ class ProjectileSystem:
                 if not existing_equipped:
                     self.game.player.equip_weapon(o)
                 are_weapons_updated = True
+        print('===========')
         return are_weapons_updated
 
     def _maybe_drop_weapon(self, newly_pressed_keys):
