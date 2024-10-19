@@ -18,7 +18,8 @@ Tooling for the Google CTF 2024 Hackceler8 finals by the C4T BuT S4D team.
 - Automatic shooting, enabled on `Ctrl+J`.
 - Utility [client.sh](./client.sh) and [server.sh](./server.sh) scripts to start the game locally in different modes and with/without SSL.
 - Automatic **projectile dodging**, simulating a few ticks into the future and saving the player from taking certain damage from enemy bullets and spikes.
-- Pasting text into textboxes.
+- Pasting text into textboxes by [patching moderngl](./moderngl-paste.patch)
+- The game is patched to work under macOS by [patching moderngl again](./moderngl-window-retina.patch)
 
 ### Game patches
 
