@@ -2,11 +2,14 @@
 
 Tooling for the Google CTF 2024 Hackceler8 finals by the C4T BuT S4D team.
 
-![Game](screenshots/game.png)
+![Game](screenshots/game.jpg)
 
 ## Features
 
 - Pathfinding on left click using a parallel A\* ([cheats-rust/search](cheats-rust/search)), for which the whole physics engine was rewritten in Rust. Last year the search didn't allow taking damage, so it was impossible to use it to pass the obstacles with some damage. This year we've added a special mode to allow taking damage when pathfinding. It also minimizes the damage taken using binary search. We also beatifully draw the projected path of the player.
+
+![Pathfinding](screenshots/pathfinding.gif)
+
 - We've rewritten the Python `round()` function in Rust to be blazing fast. Implementation can be found [here](cheats-rust/rround/src/lib.rs).
 - GUI modifications to include hitbox highlighting, object (keys & other items) tracing, object names and auxilary info (fps, tps, ticks).
 - Game zooming with `Ctrl+N` and `Ctrl+M`.
@@ -35,19 +38,19 @@ Game overview with all information needed to complete the current game,
 with the ability to track each object in the game. Maps prerendered using
 `./client.sh prerender` are displayed here with text labels for all objects.
 
-![overview](screenshots/overview.png)
+![overview](screenshots/overview.jpg)
 
-![maps](screenshots/maps.png)
+![maps](screenshots/maps.jpg)
 
 ### Settings
 
 Pathfinding parameters, GUI modifications, and other tooling parameters can be configured here.
-![settings](screenshots/settings.png)
+![settings](screenshots/settings.jpg)
 
 ### Recordings
 
 Recordings are listed for each map with an additional screenshot of the game at the time when the recording was saved. The chosen recording is memorized on disk to allow fast replays when completing a level in standalone mode.
-![recordings](screenshots/recordings.png)
+![recordings](screenshots/recordings.jpg)
 
 ### Macros
 
@@ -55,4 +58,4 @@ Macros addition and selection, with support for Python `eval` for more
 comfortable configuration of complex macros. Macros can additionally be
 configured to force the macros keys to be pressed, useful for example
 for shooting in the opposite direction on the fighting boss.
-![macros](screenshots/macros.png)
+![macros](screenshots/macros.jpg)
