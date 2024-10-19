@@ -605,7 +605,7 @@ class Venator:
             self.save_file.save(self)
 
     def has_item(self, name_substr: str) -> bool:
-        if not self.is_server and any(name_substr in item_name for item_name in self.save_file.extra_items):
+        if not self.is_server and self.save_file.extra_items and any(name_substr in item_name for item_name in self.save_file.extra_items):
             return True
         return any(name_substr in i.name for i in self.items)
 
