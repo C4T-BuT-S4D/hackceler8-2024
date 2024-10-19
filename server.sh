@@ -19,6 +19,11 @@ else
     source env/bin/activate
 fi
 
-python3 server.py --hostname=localhost --port=8888 --ca="./ca/CA-devel.crt" --cert="./ca/dev-team.crt" --key="./ca/dev-team.key"
+extra_items=""
+if [ -n "$EXTRA" ]; then
+    extra_items="--extra-items $EXTRA"
+fi
+
+python3 server.py --hostname=localhost --port=8888 --ca="./ca/CA-devel.crt" --cert="./ca/dev-team.crt" --key="./ca/dev-team.key" $extra_items
 
 cd $initialdir
