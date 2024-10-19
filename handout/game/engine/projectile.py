@@ -64,6 +64,10 @@ class ProjectileSystem:
 
     def _check_player_collisions(self, pressed_keys):
         # Collect weapons with the space key.
+        for o in list(self.weapons):
+            print('-----------')
+            if o.collides(self.game.player):
+                print(f'{o.name} collides with player')
         if Keys.SPACE not in pressed_keys:
             return
         if len(self.game.player.weapons) >= self.game.player.max_weapons:
