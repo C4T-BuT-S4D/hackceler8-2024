@@ -732,6 +732,17 @@ class Hackceler8(gfx.Window):
                         border=cheats_settings["object_hitbox"]
                     ))
 
+                    if o.melee_hitbox:
+                        objs.append(gfx.lrtb_rectangle_outline(
+                            o.melee_hitbox.x1,
+                            o.melee_hitbox.x2,
+                            o.melee_hitbox.y2,
+                            o.melee_hitbox.y1,
+                            # purple
+                            (255, 0, 255, 255),
+                            border=cheats_settings["object_hitbox"]
+                        ))
+
             if cheats_settings["draw_names"] and o.nametype not in {"Wall"}:
                 text = f"{o.nametype}"
 

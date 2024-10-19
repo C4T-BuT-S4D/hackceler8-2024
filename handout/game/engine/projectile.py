@@ -71,7 +71,9 @@ class ProjectileSystem:
             return False
         are_weapons_updated = False
         for o in list(self.weapons):
+            print('-----------')
             if o.collides(self.game.player):
+                print(f'{o.name} collides with player')
                 logging.debug("Player collected with a weapon")
                 self.game.player.weapons.append(o)
                 self.weapons.remove(o)
