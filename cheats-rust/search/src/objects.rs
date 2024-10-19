@@ -13,4 +13,5 @@ pub enum ObjectType {
     Warp(),
     Projectile(Pointf),
     ConstantDamage(f64),
+    VariableDamage((f64, f64)),
 }

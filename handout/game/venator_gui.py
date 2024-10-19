@@ -1183,6 +1183,17 @@ class Hackceler8(gfx.Window):
             for o in self.game.objects + self.game.stateful_objects
             if o.nametype in deadly_objects_type
         ]
+
+        if cheat_settings["allow_damage"] and not enable_proj:
+            for o in self.game.objects + self.game.stateful_objects:
+                if o.nametype == "Fire":
+                    print(o.modifier.min_distance, o.modifier.damage)
+                    static_objects.append(
+                        (
+                            search.Hitbox(search.Rectangle(o.x, 0, o.y, 0)), 
+                            search.ObjectType.VariableDamage((o.modifier.min_distance, o.modifier.damage))
+                        )
+                    )
         
         if enable_proj:
             projs = [
@@ -1251,7 +1262,7 @@ class Hackceler8(gfx.Window):
                 base_vx=player.base_x_speed,
                 base_vy=player.base_y_speed,
 
-                health=player.health,
+                health=100.0,
 
                 jump_override=player.jump_override,
                 direction=player_direction,

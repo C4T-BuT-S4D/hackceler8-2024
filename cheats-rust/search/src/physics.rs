@@ -75,21 +75,42 @@ impl PhysState {
             }
         }
 
+        let mut apply_gravity: bool = true;
         if search_settings.allow_damage {
             for (hitbox, damage) in &state.constant_damage {
                 if hitbox.collides(&self.player.get_hitbox()) {
                     self.player.health = (self.player.health - damage).max(0.0);
+                    self.player.vy = 0.0;
+                    apply_gravity = false;
                     if self.player.health == 0.0 {
                         self.player.dead = true;
                         return;
                     }
                 }
             }
+
+            for (hitbox, (min_distance, damage)) in &state.variable_damage {
+                let dx = self.player.x - hitbox.rect.x1;
+                let dy = self.player.y - hitbox.rect.y1;
+                let distance = (dx * dx + dy * dy).sqrt();
+                if distance < *min_distance {
+                    let damage = (*min_distance - distance) / *min_distance * damage;
+                    self.player.health = (self.player.health - damage).max(0.0);
+                    self.player.vy = 0.0;
+                    apply_gravity = false;
+                    if self.player.health == 0.0 {
+                        self.player.dead = true;
+                        return;
+                    }
+                }
+            }
+
+            self.player.health = self.player.health.floor();
         }
 
         self.detect_env_mod(state);
 
-        if self.player.in_the_air {
+        if self.player.in_the_air && apply_gravity {
             self.player.vy -= self.gravity;
         }
 

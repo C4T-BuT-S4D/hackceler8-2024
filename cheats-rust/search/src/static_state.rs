@@ -9,6 +9,7 @@ pub struct StaticState {
     pub objects: Vec<(Hitbox, ObjectType)>,
     pub deadly: Vec<Hitbox>,
     pub constant_damage: Vec<(Hitbox, f64)>,
+    pub variable_damage: Vec<(Hitbox, (f64, f64))>,
     pub proj: Vec<Hitbox>,
     pub proj_v: Vec<Pointf>,
     pub environments: Vec<EnvModifier>,
@@ -20,6 +21,7 @@ impl StaticState {
     pub fn new(objects: Vec<(Hitbox, ObjectType)>, environments: Vec<EnvModifier>) -> Self {
         let mut deadly = Vec::new();
         let mut constant_damage = Vec::new();
+        let mut variable_damage = Vec::new();
         let mut proj = Vec::new();
         let mut proj_v = Vec::new();
         let mut other_objects = Vec::new();
@@ -38,6 +40,9 @@ impl StaticState {
                 ObjectType::ConstantDamage(damage) => {
                     constant_damage.push((hitbox, damage));
                 }
+                ObjectType::VariableDamage((min_distance, damage)) => {
+                    variable_damage.push((hitbox, (min_distance, damage)));
+                }
                 _ => {
                     other_objects.push((hitbox, t));
                 }
@@ -47,11 +52,13 @@ impl StaticState {
             objects: other_objects,
             deadly,
             constant_damage,
+            variable_damage,
             proj,
             proj_v,
             environments,
         }
     }
+
     pub fn step_deadly(&self) -> Self {
         let mut copy = self.clone();
         for (hitbox, vel) in copy.proj.iter_mut().zip(copy.proj_v.iter()) {
