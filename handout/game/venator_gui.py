@@ -48,6 +48,7 @@ class Hackceler8(gfx.Window):
         self.star = gfx.GuiImage.load(self, "resources/objects/star.png")
         self.stamina = gfx.GuiImage.load(self, "resources/objects/stamina.png")
         self.recording = gfx.GuiImage.load(self, "resources/objects/recording.png")
+        self.neplox = gfx.GuiImage.load(self, "resources/objects/neplox.png")
 
         self.boss_bg = None
 
@@ -229,6 +230,8 @@ class Hackceler8(gfx.Window):
         if len(self.tick_times) > 1:
             gfx.draw_txt("tps", gfx.FONT_PIXEL[30], "T %.02f" % (len(self.tick_times) / (self.tick_times[-1] - self.tick_times[0])),
                         10, 70)
+
+        gfx.draw_img("neplox", self.neplox, -118-10, 10)
 
         if self.game.cheating_detected:
             txt = "   OUT OF SYNC\nCHEATING DETECTED"
