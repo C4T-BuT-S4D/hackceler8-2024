@@ -14,6 +14,7 @@
 
 from game.components.npc.trapped_npc import Quackington, Jessse, Trasher, Casher, Raibbit
 from game.components.npc.password_npc import EasyPasswordNpc
+from game.components.npc.weapon_grader_npc import WeaponGraderNpc
 
 NPC_TYPES = {
     "easy_password_npc": EasyPasswordNpc,
@@ -22,4 +23,5 @@ NPC_TYPES = {
     "trapped_trasher_npc": Trasher,
     "trapped_casher_npc": Casher,
     "trapped_raibbit_npc": Raibbit,
+    "weapon_grader_npc": WeaponGraderNpc,
 }

@@ -45,6 +45,7 @@ class Projectile(generics.GenericObject):
         self.origin = origin
         self.base_damage = base_damage
         self.weapon = weapon
+        self.projectile_range = 1000
 
     def check_oob(self, player):
         if abs(player.x - self.x) > constants.SCREEN_WIDTH:
